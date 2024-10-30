@@ -1,0 +1,5 @@
+package plugin
+
+import "DYCLOUD/plugin/{{ .Package }}/config"
+
+var Config config.Config
