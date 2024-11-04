@@ -1,0 +1,2 @@
+[DYCLOUD]2024-11-04 13:27:50.719	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/environment.go:34	执行失败!	{"error": "Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'key like ? OR id = ?) AND `cicd_environments`.`deleted_at` IS NULL' at line 1"}
+[DYCLOUD]2024-11-04 13:28:47.393	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection

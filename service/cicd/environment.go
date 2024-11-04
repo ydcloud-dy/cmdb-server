@@ -24,7 +24,8 @@ func (e *EnvironmentService) GetEnvironmentList(req *request.EnvRequest) (envLis
 
 	// 创建db
 	if req.Keyword != "" {
-		db = db.Where("name = ?", req.Keyword).Or("id = ?", req.Keyword)
+		keyword := "%" + req.Keyword + "%"
+		db = db.Where("name like ?", keyword).Or("`key` like ?", keyword).Or("id = ?", req.Keyword)
 	}
 
 	var data []cicd.Environment
