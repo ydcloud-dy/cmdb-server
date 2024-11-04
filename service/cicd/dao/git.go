@@ -32,6 +32,8 @@ func VerifyRepoConnetion(scmType cicd.ServiceType, url string, token string) err
 	if resp == nil && err != nil {
 		return fmt.Errorf("连接源码仓库失败,错误信息：%s", err)
 	}
+	fmt.Println(resp)
+	fmt.Println("=-========")
 	// 如果没有提供token，则允许返回401（未授权），表示仓库可连接但没有认证
 	if token == "" {
 		// 检查响应状态码，200-299 ，401 表示未授权
