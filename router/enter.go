@@ -1,6 +1,7 @@
 package router
 
 import (
+	"DYCLOUD/router/cicd"
 	"DYCLOUD/router/cmdb"
 	"DYCLOUD/router/configCenter"
 	"DYCLOUD/router/example"
@@ -74,4 +75,5 @@ type RouterGroup struct {
 	RoleBinding          rolebinding.RouterGroup
 	Velero               velero.K8sVeleroTasksRouter
 	Environment          configCenter.RouterGroup
+	CICD                 cicd.RouterGroup
 }

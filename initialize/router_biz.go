@@ -82,10 +82,14 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		cmdbRouter.InitBatchOperationsRouter(privateGroup, publicGroup)
 	}
 	{
-		cicdRouter := router.RouterGroupApp.Environment
-		cicdRouter.InitEnvironmentRouter(privateGroup, publicGroup)
-		cicdRouter.InitServiceIntrgrationRouter(privateGroup, publicGroup)
-		cicdRouter.InitSourceCodeRouter(privateGroup, publicGroup)
-		cicdRouter.InitApplicationsRouter(privateGroup, publicGroup)
+		configCenter := router.RouterGroupApp.Environment
+		configCenter.InitEnvironmentRouter(privateGroup, publicGroup)
+		configCenter.InitServiceIntrgrationRouter(privateGroup, publicGroup)
+		configCenter.InitSourceCodeRouter(privateGroup, publicGroup)
+
+	}
+	{
+		cicd := router.RouterGroupApp.CICD.ApplicationsRouter
+		cicd.InitApplicationsRouter(privateGroup, publicGroup)
 	}
 }

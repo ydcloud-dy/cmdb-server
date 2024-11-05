@@ -1,9 +1,11 @@
-package configCenter
+package cicd
 
 import (
 	"DYCLOUD/global"
+	"DYCLOUD/model/cicd"
+	request2 "DYCLOUD/model/cicd/request"
 	"DYCLOUD/model/common/response"
-	"DYCLOUD/model/configCenter/request"
+	"DYCLOUD/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -18,7 +20,7 @@ type ApplicationsApi struct{}
 //	@receiver ApplicationsApi
 //	@param c
 func (ApplicationsApi *ApplicationsApi) GetApplicationsList(c *gin.Context) {
-	var env *request.EnvRequest
+	var env *request2.ApplicationRequest
 	err := c.BindQuery(&env)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -70,22 +72,23 @@ func (ApplicationsApi *ApplicationsApi) DescribeApplications(c *gin.Context) {
 //	@receiver ApplicationsApi
 //	@param c
 func (ApplicationsApi *ApplicationsApi) CreateApplications(c *gin.Context) {
-	//var request *configCenter.Applications
-	//err := c.ShouldBindJSON(&request)
-	//if err != nil {
-	//	response.FailWithMessage(err.Error(), c)
-	//	return
-	//}
-	//fmt.Println(request)
-	//request.CreatedBy = utils.GetUserID(c)
-	//request.CreatedName = utils.GetUserName(c)
-	////userId := utils.GetUserID(c)
-	//err = ApplicationService.CreateApplications(request)
-	//if err != nil {
-	//	response.FailWithMessage(err.Error(), c)
-	//	return
-	//}
-	//response.OkWithData("创建成功", c)
+
+	var request *cicd.Applications
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	fmt.Println(request)
+	request.CreatedBy = utils.GetUserID(c)
+	request.CreatedName = utils.GetUserName(c)
+	//userId := utils.GetUserID(c)
+	err = ApplicationService.CreateApplications(request)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData("创建成功", c)
 }
 
 // UpdateApplications
@@ -94,21 +97,21 @@ func (ApplicationsApi *ApplicationsApi) CreateApplications(c *gin.Context) {
 //	@receiver ApplicationsApi
 //	@param c
 func (ApplicationsApi *ApplicationsApi) UpdateApplications(c *gin.Context) {
-	//var request *configCenter.Applications
-	//err := c.ShouldBindJSON(&request)
-	//if err != nil {
-	//	response.FailWithMessage(err.Error(), c)
-	//	return
-	//}
-	//fmt.Println(request, "================================")
-	//request.UpdatedBy = utils.GetUserID(c)
-	//request.UpdatedName = utils.GetUserName(c)
-	//data, err := ApplicationService.UpdateApplications(request)
-	//if err != nil {
-	//	response.FailWithMessage(err.Error(), c)
-	//	return
-	//}
-	//response.OkWithData(data, c)
+	var request *cicd.Applications
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	fmt.Println(request, "================================")
+	request.UpdatedBy = utils.GetUserID(c)
+	request.UpdatedName = utils.GetUserName(c)
+	data, err := ApplicationService.UpdateApplications(request)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData(data, c)
 }
 
 // DeleteApplications
@@ -137,7 +140,7 @@ func (ApplicationsApi *ApplicationsApi) DeleteApplications(c *gin.Context) {
 //	@receiver ApplicationsApi
 //	@param c
 func (ApplicationsApi *ApplicationsApi) DeleteApplicationsByIds(c *gin.Context) {
-	ids := &request.DeleteEnvByIds{}
+	ids := &request2.DeleteApplicationByIds{}
 	err := c.ShouldBindJSON(ids)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

@@ -44,6 +44,14 @@ func (e *EnvironmentService) GetEnvironmentList(req *request.EnvRequest) (envLis
 	}
 	return &data, total, nil
 }
+
+// DescribeEnvironment
+//
+//	@Description: 查看环境详情
+//	@receiver e
+//	@param id
+//	@return envList
+//	@return err
 func (e *EnvironmentService) DescribeEnvironment(id int) (envList *configCenter.Environment, err error) {
 	fmt.Println(id)
 	var data *configCenter.Environment
@@ -52,6 +60,13 @@ func (e *EnvironmentService) DescribeEnvironment(id int) (envList *configCenter.
 	}
 	return data, nil
 }
+
+// CreateEnvironment
+//
+//	@Description: 创建环境
+//	@receiver e
+//	@param req
+//	@return error
 func (e *EnvironmentService) CreateEnvironment(req *configCenter.Environment) error {
 	fmt.Println(req)
 	var existingEnv configCenter.Environment
@@ -69,6 +84,14 @@ func (e *EnvironmentService) CreateEnvironment(req *configCenter.Environment) er
 	}
 	return nil
 }
+
+// UpdateEnvironment
+//
+//	@Description: 更新环境
+//	@receiver e
+//	@param req
+//	@return data
+//	@return err
 func (e *EnvironmentService) UpdateEnvironment(req *configCenter.Environment) (data *configCenter.Environment, err error) {
 	fmt.Println(req)
 	if err = global.DYCLOUD_DB.Model(&configCenter.Environment{}).Where("id = ?", req.ID).Omit("ID").Updates(&req).Error; err != nil {
@@ -76,6 +99,13 @@ func (e *EnvironmentService) UpdateEnvironment(req *configCenter.Environment) (d
 	}
 	return req, nil
 }
+
+// DeleteEnvironment
+//
+//	@Description: 删除环境
+//	@receiver e
+//	@param id
+//	@return error
 func (e *EnvironmentService) DeleteEnvironment(id int) error {
 	fmt.Println(id)
 	if err := global.DYCLOUD_DB.Model(&configCenter.Environment{}).Where("id = ?", id).Delete(&configCenter.Environment{}).Error; err != nil {
@@ -84,6 +114,12 @@ func (e *EnvironmentService) DeleteEnvironment(id int) error {
 	return nil
 }
 
+// DeleteEnvironmentByIds
+//
+//	@Description: 批量删除环境
+//	@receiver e
+//	@param ids
+//	@return error
 func (e *EnvironmentService) DeleteEnvironmentByIds(ids *request.DeleteEnvByIds) error {
 	fmt.Println(ids)
 	if err := global.DYCLOUD_DB.Model(&configCenter.Environment{}).Where("id in ?", ids.Ids).Delete(&configCenter.Environment{}).Error; err != nil {

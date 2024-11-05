@@ -1,6 +1,8 @@
 package request
 
-import "DYCLOUD/model/common/request"
+import (
+	"DYCLOUD/model/common/request"
+)
 
 type EnvRequest struct {
 	request.PageInfo
