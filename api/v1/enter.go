@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"DYCLOUD/api/v1/cicd"
 	"DYCLOUD/api/v1/cmdb"
+	"DYCLOUD/api/v1/configCenter"
 	"DYCLOUD/api/v1/example"
 	"DYCLOUD/api/v1/kubernetes/cloudtty"
 	"DYCLOUD/api/v1/kubernetes/clusterManager/cluster"
@@ -71,5 +71,5 @@ type ApiGroup struct {
 	ClusterRoleBinding  clusterrolebinding.ApiGroup
 	Role                roles.ApiGroup
 	RoleBinding         rolebindings.ApiGroup
-	CICD                cicd.ApiGroup
+	CICD                configCenter.ApiGroup
 }

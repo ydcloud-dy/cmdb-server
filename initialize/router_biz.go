@@ -86,5 +86,6 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		cicdRouter.InitEnvironmentRouter(privateGroup, publicGroup)
 		cicdRouter.InitServiceIntrgrationRouter(privateGroup, publicGroup)
 		cicdRouter.InitSourceCodeRouter(privateGroup, publicGroup)
+		cicdRouter.InitApplicationsRouter(privateGroup, publicGroup)
 	}
 }

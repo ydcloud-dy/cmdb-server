@@ -1,10 +1,10 @@
-package cicd
+package configCenter
 
 import (
 	"DYCLOUD/global"
-	"DYCLOUD/model/cicd"
-	"DYCLOUD/model/cicd/request"
 	"DYCLOUD/model/common/response"
+	"DYCLOUD/model/configCenter"
+	"DYCLOUD/model/configCenter/request"
 	"DYCLOUD/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -72,7 +72,7 @@ func (EnvironmentApi *EnvironmentApi) DescribeEnvironment(c *gin.Context) {
 //	@receiver EnvironmentApi
 //	@param c
 func (EnvironmentApi *EnvironmentApi) CreateEnvironment(c *gin.Context) {
-	var request *cicd.Environment
+	var request *configCenter.Environment
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -80,6 +80,7 @@ func (EnvironmentApi *EnvironmentApi) CreateEnvironment(c *gin.Context) {
 	}
 	fmt.Println(request)
 	request.CreatedBy = utils.GetUserID(c)
+	request.CreatedName = utils.GetUserName(c)
 	//userId := utils.GetUserID(c)
 	err = EnvironmentService.CreateEnvironment(request)
 	if err != nil {
@@ -95,7 +96,7 @@ func (EnvironmentApi *EnvironmentApi) CreateEnvironment(c *gin.Context) {
 //	@receiver EnvironmentApi
 //	@param c
 func (EnvironmentApi *EnvironmentApi) UpdateEnvironment(c *gin.Context) {
-	var request *cicd.Environment
+	var request *configCenter.Environment
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -103,6 +104,7 @@ func (EnvironmentApi *EnvironmentApi) UpdateEnvironment(c *gin.Context) {
 	}
 	fmt.Println(request, "================================")
 	request.UpdatedBy = utils.GetUserID(c)
+	request.UpdatedName = utils.GetUserName(c)
 	data, err := EnvironmentService.UpdateEnvironment(request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

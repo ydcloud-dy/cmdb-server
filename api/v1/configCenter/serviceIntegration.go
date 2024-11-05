@@ -1,10 +1,10 @@
-package cicd
+package configCenter
 
 import (
 	"DYCLOUD/global"
-	"DYCLOUD/model/cicd"
-	"DYCLOUD/model/cicd/request"
 	"DYCLOUD/model/common/response"
+	"DYCLOUD/model/configCenter"
+	"DYCLOUD/model/configCenter/request"
 	"DYCLOUD/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -49,7 +49,7 @@ func (s *ServiceIntegrationApi) GetServiceIntegrationList(c *gin.Context) {
 //	@receiver s
 //	@param c
 func (s *ServiceIntegrationApi) CreateServiceIntegration(c *gin.Context) {
-	var request *cicd.ServiceIntegration
+	var request *configCenter.ServiceIntegration
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -57,12 +57,14 @@ func (s *ServiceIntegrationApi) CreateServiceIntegration(c *gin.Context) {
 	}
 	fmt.Println(request)
 	request.CreatedBy = utils.GetUserID(c)
+	request.CreatedName = utils.GetUserName(c)
 	//userId := utils.GetUserID(c)
 	err = ServiceIntegrationService.CreateServiceIntegration(request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
+
 	response.OkWithData("创建成功", c)
 }
 
@@ -72,7 +74,7 @@ func (s *ServiceIntegrationApi) CreateServiceIntegration(c *gin.Context) {
 //	@receiver s
 //	@param c
 func (s *ServiceIntegrationApi) UpdateServiceIntegration(c *gin.Context) {
-	var request *cicd.ServiceIntegration
+	var request *configCenter.ServiceIntegration
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -80,6 +82,7 @@ func (s *ServiceIntegrationApi) UpdateServiceIntegration(c *gin.Context) {
 	}
 	fmt.Println(request, "================================")
 	request.UpdatedBy = utils.GetUserID(c)
+	request.UpdatedName = utils.GetUserName(c)
 	err = ServiceIntegrationService.UpdateServiceIntegration(request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -107,6 +110,12 @@ func (s *ServiceIntegrationApi) DeleteServiceIntegration(c *gin.Context) {
 	}
 	response.OkWithData("删除成功", c)
 }
+
+// DescribeServiceIntegration
+//
+//	@Description: 查询服务详细信息
+//	@receiver s
+//	@param c
 func (s *ServiceIntegrationApi) DescribeServiceIntegration(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -131,7 +140,7 @@ func (s *ServiceIntegrationApi) DescribeServiceIntegration(c *gin.Context) {
 //	@receiver s
 //	@param c
 func (s *ServiceIntegrationApi) VerifyServiceIntegration(c *gin.Context) {
-	var request *cicd.ServiceIntegration
+	var request *configCenter.ServiceIntegration
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

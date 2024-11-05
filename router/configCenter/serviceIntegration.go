@@ -1,4 +1,4 @@
-package cicd
+package configCenter
 
 import (
 	"DYCLOUD/middleware"
@@ -9,7 +9,7 @@ type ServiceIntegrationRouter struct{}
 
 // InitServiceIntrgrationRouter 初始化 ServiceIntrgration表 路由信息
 func (s *ServiceIntegrationRouter) InitServiceIntrgrationRouter(Router *gin.RouterGroup, PublicRouter *gin.RouterGroup) {
-	ServiceIntegrationRouter := Router.Group("cicd").Use(middleware.OperationRecord())
+	ServiceIntegrationRouter := Router.Group("configCenter").Use(middleware.OperationRecord())
 	//ServiceIntrgrationRouterWithoutRecord := Router.Group("cmdb")
 	//ServiceIntrgrationRouterWithoutAuth := PublicRouter.Group("cmdb")
 	{

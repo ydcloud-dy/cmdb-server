@@ -1,0 +1,18 @@
+[DYCLOUD]2024-11-05 08:45:45.641	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-11-05 08:47:22.235	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-11-05 08:48:45.907	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-11-05 08:58:05.693	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/serviceIntegration.go:142	执行失败!	{"error": "record not found"}
+[DYCLOUD]2024-11-05 09:02:11.343	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-11-05 09:06:00.738	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-11-05 09:06:52.362	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/sourceCode.go:173	执行失败!	{"error": "scmclient get repositories list error: 401 Unauthorized"}
+[DYCLOUD]2024-11-05 09:11:13.348	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/docker/docker/client.go:35	record not found
+[DYCLOUD]2024-11-05 09:11:13.349	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/docker/system.go:29	获取系统信息失败!	{"error": "host is not found"}
+[DYCLOUD]2024-11-05 09:11:13.350	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/docker/docker/client.go:35	record not found
+[DYCLOUD]2024-11-05 09:11:13.350	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/docker/container.go:39	获取容器列表失败:	{"error": "host is not found"}
+[DYCLOUD]2024-11-05 09:11:13.350	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/docker/docker/client.go:35	record not found
+[DYCLOUD]2024-11-05 09:11:13.350	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/docker/volume.go:33	获取存储卷列表失败!	{"error": "host is not found"}
+[DYCLOUD]2024-11-05 09:11:13.351	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/docker/docker/client.go:35	record not found
+[DYCLOUD]2024-11-05 09:11:13.351	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/docker/network.go:33	获取网络列表失败!	{"error": "host is not found"}
+[DYCLOUD]2024-11-05 09:11:13.352	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/docker/docker/client.go:35	record not found
+[DYCLOUD]2024-11-05 09:11:13.352	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/docker/image.go:33	获取镜像列表失败!	{"error": "host is not found"}
+[DYCLOUD]2024-11-05 09:13:37.389	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection

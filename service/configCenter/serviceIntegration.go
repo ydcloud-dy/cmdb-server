@@ -1,9 +1,9 @@
-package cicd
+package configCenter
 
 import (
 	"DYCLOUD/global"
-	"DYCLOUD/model/cicd"
-	"DYCLOUD/model/cicd/request"
+	"DYCLOUD/model/configCenter"
+	"DYCLOUD/model/configCenter/request"
 	cicd2 "DYCLOUD/utils/cicd"
 	"encoding/json"
 	"errors"
@@ -24,12 +24,12 @@ type ServiceIntegrationService struct{}
 //	@return data
 //	@return total
 //	@return err
-func (s *ServiceIntegrationService) GetServiceIntegrationList(req *request.ServiceRequest) (data *[]cicd.ServiceIntegration, total int64, err error) {
+func (s *ServiceIntegrationService) GetServiceIntegrationList(req *request.ServiceRequest) (data *[]configCenter.ServiceIntegration, total int64, err error) {
 	limit := req.PageSize
 	offset := req.PageSize * (req.Page - 1)
 	// 创建db
-	db := global.DYCLOUD_DB.Model(&cicd.ServiceIntegration{})
-	var serviceList []cicd.ServiceIntegration
+	db := global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{})
+	var serviceList []configCenter.ServiceIntegration
 	// 如果有条件搜索 下方会自动创建搜索语句
 	//if info.StartCreatedAt != nil && info.EndCreatedAt != nil {
 	//db = db.Where("created_at BETWEEN ? AND ?", info.StartCreatedAt, info.EndCreatedAt).Where("project = ?",info.Project)
@@ -68,15 +68,18 @@ func (s *ServiceIntegrationService) GetServiceIntegrationList(req *request.Servi
 //	@receiver s
 //	@param req
 //	@return error
-func (s *ServiceIntegrationService) CreateServiceIntegration(req *cicd.ServiceIntegration) error {
+func (s *ServiceIntegrationService) CreateServiceIntegration(req *configCenter.ServiceIntegration) error {
 	config, err := req.ChooseConfig()
 	if err != nil {
 		return err
 	}
 
 	req.CryptoConfig(config)
-
-	if err := global.DYCLOUD_DB.Model(&cicd.ServiceIntegration{}).Create(&req).Error; err != nil {
+	var existingService configCenter.ServiceIntegration
+	if err := global.DYCLOUD_DB.Where("name = ?", req.Name).First(&existingService).Error; err == nil {
+		return fmt.Errorf("服务名称 '%s' 已存在，请选择一个唯一的名称", req.Name)
+	}
+	if err := global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{}).Create(&req).Error; err != nil {
 		return err
 	}
 	return nil
@@ -88,7 +91,7 @@ func (s *ServiceIntegrationService) CreateServiceIntegration(req *cicd.ServiceIn
 //	@receiver s
 //	@param req
 //	@return error
-func (s *ServiceIntegrationService) UpdateServiceIntegration(req *cicd.ServiceIntegration) error {
+func (s *ServiceIntegrationService) UpdateServiceIntegration(req *configCenter.ServiceIntegration) error {
 	fmt.Println(req)
 	data, err := s.DescribeServiceIntegration(int(req.ID))
 	if err != nil {
@@ -100,7 +103,7 @@ func (s *ServiceIntegrationService) UpdateServiceIntegration(req *cicd.ServiceIn
 		return err
 	}
 	data.CryptoConfig(config)
-	if err = global.DYCLOUD_DB.Model(&cicd.ServiceIntegration{}).Where("id = ?", req.ID).Updates(&data).Error; err != nil {
+	if err = global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{}).Where("id = ?", req.ID).Updates(&data).Error; err != nil {
 		return err
 	}
 	return nil
@@ -115,7 +118,7 @@ func (s *ServiceIntegrationService) UpdateServiceIntegration(req *cicd.ServiceIn
 func (s *ServiceIntegrationService) DeleteServiceIntegration(id int) error {
 	fmt.Println(id)
 
-	if err := global.DYCLOUD_DB.Where("id = ?", id).Delete(&cicd.ServiceIntegration{}).Error; err != nil {
+	if err := global.DYCLOUD_DB.Where("id = ?", id).Delete(&configCenter.ServiceIntegration{}).Error; err != nil {
 		return err
 	}
 	return nil
@@ -126,12 +129,12 @@ func (s *ServiceIntegrationService) DeleteServiceIntegration(id int) error {
 //	@Description: 获取服务详情
 //	@receiver s
 //	@param id
-//	@return *cicd.ServiceIntegration
+//	@return *configCenter.ServiceIntegration
 //	@return error
-func (s *ServiceIntegrationService) DescribeServiceIntegration(id int) (*cicd.ServiceIntegration, error) {
+func (s *ServiceIntegrationService) DescribeServiceIntegration(id int) (*configCenter.ServiceIntegration, error) {
 	fmt.Println(id)
-	var data cicd.ServiceIntegration
-	if err := global.DYCLOUD_DB.Model(&cicd.ServiceIntegration{}).Where("id = ? and type != 3", id).First(&data).Error; err != nil {
+	var data configCenter.ServiceIntegration
+	if err := global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{}).Where("id = ? and type != 3", id).First(&data).Error; err != nil {
 		return nil, err
 	}
 	data.DecryptConfig()
@@ -145,11 +148,11 @@ func (s *ServiceIntegrationService) DescribeServiceIntegration(id int) (*cicd.Se
 //	@param req
 //	@return string
 //	@return error
-func (s *ServiceIntegrationService) VerifyServiceIntegration(req *cicd.ServiceIntegration) (string, error) {
+func (s *ServiceIntegrationService) VerifyServiceIntegration(req *configCenter.ServiceIntegration) (string, error) {
 	fmt.Println(req)
 	switch req.Type {
-	case cicd.KUBERNETES_TYPE:
-		kube := &cicd.KubernetesConfig{}
+	case configCenter.KUBERNETES_TYPE:
+		kube := &configCenter.KubernetesConfig{}
 		err := json.Unmarshal([]byte(req.Config), kube)
 		if err != nil {
 			global.DYCLOUD_LOG.Error(fmt.Sprintf("kubernetes conf format error: %v", err.Error()))
@@ -157,12 +160,12 @@ func (s *ServiceIntegrationService) VerifyServiceIntegration(req *cicd.ServiceIn
 		}
 		var k8sConf *rest.Config
 		switch kube.Type {
-		case cicd.KUBERNETES_CONFIG:
+		case configCenter.KUBERNETES_CONFIG:
 			k8sConf, err = clientcmd.RESTConfigFromKubeConfig([]byte(kube.Conf))
 			if err != nil {
 				return "", err
 			}
-		case cicd.KUBERNETES_TOKEN:
+		case configCenter.KUBERNETES_TOKEN:
 			k8sConf = &rest.Config{
 				BearerToken:     kube.Conf,
 				TLSClientConfig: rest.TLSClientConfig{Insecure: true},
@@ -182,8 +185,8 @@ func (s *ServiceIntegrationService) VerifyServiceIntegration(req *cicd.ServiceIn
 		msg := fmt.Sprintf("成功连接k8s集群： %s", k8sVersion.GitVersion)
 		return msg, nil
 
-	case cicd.REGISTRY_TYPE:
-		registryConf := &cicd.RegistryConfig{}
+	case configCenter.REGISTRY_TYPE:
+		registryConf := &configCenter.RegistryConfig{}
 		err := json.Unmarshal([]byte(req.Config), registryConf)
 		if err != nil {
 			global.DYCLOUD_LOG.Error(fmt.Sprintf("registryConf unmarshal failed", err.Error()))
@@ -195,8 +198,8 @@ func (s *ServiceIntegrationService) VerifyServiceIntegration(req *cicd.ServiceIn
 			return "", err
 		}
 		return "连接成功", err
-	case cicd.JENKINS_TYPE:
-		jenkinsConf := &cicd.JenkinsConfig{}
+	case configCenter.JENKINS_TYPE:
+		jenkinsConf := &configCenter.JenkinsConfig{}
 		err := json.Unmarshal([]byte(req.Config), jenkinsConf)
 		if err != nil {
 			global.DYCLOUD_LOG.Error(fmt.Sprintf("jenkinsConf unmarshal failed", err.Error()))

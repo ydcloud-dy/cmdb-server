@@ -1,8 +1,8 @@
 package service
 
 import (
-	"DYCLOUD/service/cicd"
 	"DYCLOUD/service/cmdb"
+	"DYCLOUD/service/configCenter"
 	"DYCLOUD/service/example"
 	"DYCLOUD/service/kubernetes/cloudtty"
 	"DYCLOUD/service/kubernetes/cluster"
@@ -71,5 +71,5 @@ type ServiceGroup struct {
 	RoleServiceGroup                 role.ServiceGroup
 	RoleBindingServiceGroup          roleBinding.ServiceGroup
 	VeleroServiceGroup               velero.ServiceGroup
-	CICDServiceGroup                 cicd.ServiceGroup
+	CICDServiceGroup                 configCenter.ServiceGroup
 }

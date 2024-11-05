@@ -1,10 +1,10 @@
-package cicd
+package configCenter
 
 import (
 	"DYCLOUD/global"
-	"DYCLOUD/model/cicd"
-	"DYCLOUD/model/cicd/request"
 	"DYCLOUD/model/common/response"
+	"DYCLOUD/model/configCenter"
+	"DYCLOUD/model/configCenter/request"
 	"DYCLOUD/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -45,11 +45,11 @@ func (s *SourceCodeApi) GetSourceCodeList(c *gin.Context) {
 
 // CreateSourceCode
 //
-//	@Description: 创建服务列表
+//	@Description: 创建代码源
 //	@receiver s
 //	@param c
 func (s *SourceCodeApi) CreateSourceCode(c *gin.Context) {
-	var request *cicd.ServiceIntegration
+	var request *configCenter.ServiceIntegration
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -68,11 +68,11 @@ func (s *SourceCodeApi) CreateSourceCode(c *gin.Context) {
 
 // UpdateSourceCode
 //
-//	@Description: 更新服务
+//	@Description: 更新代码源
 //	@receiver s
 //	@param c
 func (s *SourceCodeApi) UpdateSourceCode(c *gin.Context) {
-	var request *cicd.ServiceIntegration
+	var request *configCenter.ServiceIntegration
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -90,7 +90,7 @@ func (s *SourceCodeApi) UpdateSourceCode(c *gin.Context) {
 
 // DeleteSourceCode
 //
-//	@Description: 删除服务
+//	@Description: 删除代码源
 //	@receiver s
 //	@param c
 func (s *SourceCodeApi) DeleteSourceCode(c *gin.Context) {
@@ -107,6 +107,12 @@ func (s *SourceCodeApi) DeleteSourceCode(c *gin.Context) {
 	}
 	response.OkWithData("删除成功", c)
 }
+
+// DescribeSourceCode
+//
+//	@Description: 查询代码源详细信息
+//	@receiver s
+//	@param c
 func (s *SourceCodeApi) DescribeSourceCode(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -127,11 +133,11 @@ func (s *SourceCodeApi) DescribeSourceCode(c *gin.Context) {
 
 // VerifySourceCode
 //
-//	@Description: 验证服务是否正常连接
+//	@Description: 验证代码源是否正常连接
 //	@receiver s
 //	@param c
 func (s *SourceCodeApi) VerifySourceCode(c *gin.Context) {
-	var request *cicd.ServiceIntegration
+	var request *configCenter.ServiceIntegration
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -146,4 +152,27 @@ func (s *SourceCodeApi) VerifySourceCode(c *gin.Context) {
 		return
 	}
 	response.OkWithData(msg, c)
+}
+
+// GetGitProjectsByRepoId
+//
+//	@Description: 根据仓库id查询该仓库所有项目的列表
+//	@receiver s
+//	@param c
+func (s *SourceCodeApi) GetGitProjectsByRepoId(c *gin.Context) {
+	id, err := strconv.Atoi(c.Query("id"))
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	fmt.Println(id)
+	//Environment.CreatedBy = utils.GetUserID(c)
+	//userId := utils.GetUserID(c)
+	data, err := SourceCodeService.GetGitProjectsByRepoId(id)
+	if err != nil {
+		global.DYCLOUD_LOG.Error("执行失败!", zap.Error(err))
+		response.FailWithMessage("执行失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithData(data, c)
 }

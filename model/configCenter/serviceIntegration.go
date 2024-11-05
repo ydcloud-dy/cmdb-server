@@ -1,4 +1,4 @@
-package cicd
+package configCenter
 
 import (
 	"DYCLOUD/global"
@@ -64,9 +64,18 @@ type ServiceIntegration struct {
 	ConfigStr string          `json:"-" gorm:"column:config"`
 	Type      ServiceType     `json:"type" form:"type"`
 	global.DYCLOUD_MODEL
-	CreatedBy uint `gorm:"column:created_by;comment:创建者"`
-	UpdatedBy uint `gorm:"column:updated_by;comment:更新者"`
+	CreatedBy   uint   `gorm:"column:created_by;comment:创建者"`
+	CreatedName string `gorm:"column:created_name;comment:创建者名字"`
+	UpdatedBy   uint   `gorm:"column:updated_by;comment:更新者"`
+	UpdatedName string `gorm:"column:updated_name;comment:修改者名字"`
+
 	DeletedBy uint `gorm:"column:deleted_by;comment:删除者"`
+}
+type RepoProjectRsp struct {
+	RepoID   int    `json:"repo_id"`
+	Path     string `json:"path"`
+	FullName string `json:"full_name"`
+	Name     string `json:"name"`
 }
 
 func (s *ServiceIntegration) TableName() string {
@@ -100,7 +109,7 @@ func (s *ServiceIntegration) decrypt() (string, error) {
 		return "", fmt.Errorf("failed to decode base64 config: %v", err)
 	}
 
-	// 解密数据（假设 `cicd.AesEny` 是对称解密函数）
+	// 解密数据（假设 `configCenter.AesEny` 是对称解密函数）
 	decryptedData := cicd.AesEny(encryptedData)
 	return string(decryptedData), nil
 }

@@ -1,4 +1,4 @@
-package cicd
+package configCenter
 
 import (
 	"DYCLOUD/middleware"
@@ -9,7 +9,7 @@ type SourceCodeRouter struct{}
 
 // InitServiceIntrgrationRouter 初始化 ServiceIntrgration表 路由信息
 func (s *SourceCodeRouter) InitSourceCodeRouter(Router *gin.RouterGroup, PublicRouter *gin.RouterGroup) {
-	SourceCodeRouter := Router.Group("cicd").Use(middleware.OperationRecord())
+	SourceCodeRouter := Router.Group("configCenter").Use(middleware.OperationRecord())
 	//ServiceIntrgrationRouterWithoutRecord := Router.Group("cmdb")
 	//ServiceIntrgrationRouterWithoutAuth := PublicRouter.Group("cmdb")
 	{
@@ -19,6 +19,7 @@ func (s *SourceCodeRouter) InitSourceCodeRouter(Router *gin.RouterGroup, PublicR
 		SourceCodeRouter.DELETE("sourceCode/:id", SourceCodeApi.DeleteSourceCode)
 		SourceCodeRouter.GET("sourceCode/:id", SourceCodeApi.DescribeSourceCode)
 		SourceCodeRouter.POST("sourceCode/verify", SourceCodeApi.VerifySourceCode)
+		SourceCodeRouter.GET("sourceCode/repo/projects", SourceCodeApi.GetGitProjectsByRepoId)
 
 	}
 

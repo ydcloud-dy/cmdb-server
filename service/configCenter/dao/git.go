@@ -1,7 +1,8 @@
 package dao
 
 import (
-	"DYCLOUD/model/cicd"
+	"DYCLOUD/global"
+	"DYCLOUD/model/configCenter"
 	"fmt"
 	"github.com/drone/go-scm/scm"
 	"github.com/drone/go-scm/scm/driver/gitea"
@@ -16,7 +17,7 @@ import (
 )
 
 // 验证仓库源是否能正常连通，若无token，只要地址能通就行；若有token，则必须认证通过
-func VerifyRepoConnetion(scmType cicd.ServiceType, url string, token string) error {
+func VerifyRepoConnetion(scmType configCenter.ServiceType, url string, token string) error {
 	//  创建对应类型的SCM客户端
 	scmClient, err := NewScmProvider(scmType, url, token)
 	if err != nil {
@@ -61,21 +62,21 @@ func VerifyRepoConnetion(scmType cicd.ServiceType, url string, token string) err
 //	@param token
 //	@return *scm.Client
 //	@return error
-func NewScmProvider(vcsType cicd.ServiceType, vcsPath, token string) (*scm.Client, error) {
+func NewScmProvider(vcsType configCenter.ServiceType, vcsPath, token string) (*scm.Client, error) {
 	var err error
 	var client *scm.Client
 
 	// 根据 vcsType 使用不同的 SCM 驱动
 	switch vcsType {
-	case cicd.GITEA_TYPE:
+	case configCenter.GITEA_TYPE:
 		client, err = createSCMClient(gitea.New, vcsPath)
-	case cicd.GITLAB_TYPE:
+	case configCenter.GITLAB_TYPE:
 		client, err = createSCMClient(gitlab.New, vcsPath)
-	case cicd.GOGS_TYPE:
+	case configCenter.GOGS_TYPE:
 		client, err = createSCMClient(gogs.New, vcsPath)
-	case cicd.GITHUB_TYPE:
+	case configCenter.GITHUB_TYPE:
 		client = github.NewDefault()
-	case cicd.GITEE_TYPE:
+	case configCenter.GITEE_TYPE:
 		client = gitee.NewDefault()
 	default:
 		err = fmt.Errorf("source code management system not configured")
@@ -107,20 +108,20 @@ func createSCMClient(newFunc func(string) (*scm.Client, error), vcsPath string) 
 }
 
 // 根据不同类型获取客户端，若有token，则配置对应token；无token,表示公共库，不配置鉴权信息
-func getSCMHttpClient(scmType cicd.ServiceType, token string) *http.Client {
+func getSCMHttpClient(scmType configCenter.ServiceType, token string) *http.Client {
 	if token == "" {
 		return &http.Client{}
 	}
 
 	// 根据 scmType 设置对应的认证方式
 	switch scmType {
-	case cicd.GITLAB_TYPE, cicd.GOGS_TYPE:
+	case configCenter.GITLAB_TYPE, configCenter.GOGS_TYPE:
 		return &http.Client{
 			Transport: &transport.PrivateToken{
 				Token: token, // 使用私有 token 认证
 			},
 		}
-	case cicd.GITEA_TYPE, cicd.GITEE_TYPE, cicd.GITHUB_TYPE:
+	case configCenter.GITEA_TYPE, configCenter.GITEE_TYPE, configCenter.GITHUB_TYPE:
 		return &http.Client{
 			Transport: &transport.BearerToken{
 				Token: token, // 使用 Bearer token 认证
@@ -129,4 +130,18 @@ func getSCMHttpClient(scmType cicd.ServiceType, token string) *http.Client {
 	default:
 		return nil
 	}
+}
+func GetScmConf(scmType configCenter.ServiceType, config interface{}) configCenter.GitConfig {
+	scmCONF := configCenter.GitConfig{}
+	switch scmType {
+	case configCenter.GITLAB_TYPE, configCenter.GITEA_TYPE, configCenter.GITEE_TYPE, configCenter.GITHUB_TYPE:
+		if conf, ok := config.(*configCenter.GitConfig); ok {
+			scmCONF.Url = conf.Url
+			scmCONF.UserName = conf.UserName
+			scmCONF.Token = conf.Token
+		} else {
+			global.DYCLOUD_LOG.Error(fmt.Sprintf("parse type: %s conf error", configCenter.GITLAB_TYPE))
+		}
+	}
+	return scmCONF
 }
