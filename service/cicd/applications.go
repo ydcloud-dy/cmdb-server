@@ -46,7 +46,7 @@ func (e *ApplicationsService) GetApplicationsList(req *request.ApplicationReques
 	}
 	return &data, total, nil
 }
-func (e *ApplicationsService) DescribeApplications(id int) (envList *cicd.Applications, err error) {
+func (e *ApplicationsService) DescribeApplications(id int) (*cicd.Applications, error) {
 	var data *cicd.Applications
 	if err := global.DYCLOUD_DB.Where("id = ?", id).First(&data).Error; err != nil {
 		return nil, err
@@ -61,12 +61,17 @@ func (e *ApplicationsService) CreateApplications(req *cicd.Applications) error {
 
 	return nil
 }
-func (e *ApplicationsService) UpdateApplications(req *cicd.Applications) (data *cicd.Applications, err error) {
+func (e *ApplicationsService) UpdateApplications(req *cicd.Applications) (*cicd.Applications, error) {
 	fmt.Println(req)
+	data, err := e.DescribeApplications(int(req.ID))
+	if err != nil {
+		return nil, err
+	}
+	data = req
 	if err = global.DYCLOUD_DB.Model(&cicd.Applications{}).Where("id = ?", req.ID).Omit("ID").Updates(&req).Error; err != nil {
 		return nil, err
 	}
-	return req, nil
+	return data, nil
 }
 func (e *ApplicationsService) DeleteApplications(id int) error {
 	fmt.Println(id)

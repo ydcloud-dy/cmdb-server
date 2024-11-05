@@ -86,6 +86,7 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		configCenter.InitEnvironmentRouter(privateGroup, publicGroup)
 		configCenter.InitServiceIntrgrationRouter(privateGroup, publicGroup)
 		configCenter.InitSourceCodeRouter(privateGroup, publicGroup)
+		configCenter.InitBuildEnvRouter(privateGroup, publicGroup)
 
 	}
 	{

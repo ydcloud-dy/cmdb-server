@@ -1,6 +1,7 @@
 package service
 
 import (
+	"DYCLOUD/service/cicd"
 	"DYCLOUD/service/cmdb"
 	"DYCLOUD/service/configCenter"
 	"DYCLOUD/service/example"
@@ -71,5 +72,6 @@ type ServiceGroup struct {
 	RoleServiceGroup                 role.ServiceGroup
 	RoleBindingServiceGroup          roleBinding.ServiceGroup
 	VeleroServiceGroup               velero.ServiceGroup
-	CICDServiceGroup                 configCenter.ServiceGroup
+	ConfigCenterServiceGroup         configCenter.ServiceGroup
+	CICDServiceGroup                 cicd.ServiceGroup
 }
