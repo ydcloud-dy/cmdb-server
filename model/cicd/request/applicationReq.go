@@ -6,6 +6,7 @@ import (
 )
 
 type ApplicationRequest struct {
+	AppId int `json:"app_id" form:"app_id" gorm:"-"`
 	request.PageInfo
 	StartCreatedAt time.Time
 	EndCreatedAt   time.Time
