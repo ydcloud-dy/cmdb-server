@@ -49,7 +49,13 @@ func (ApplicationsApi *ApplicationsApi) GetBranchesList(c *gin.Context) {
 		return
 	}
 	var branches = request2.ApplicationRequest{}
+	err = c.BindQuery(&branches)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
 	branches.AppId = id
+
 	//Applications.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, total, err := ApplicationService.GetBranchesList(branches)
