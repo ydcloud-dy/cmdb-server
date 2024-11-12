@@ -80,6 +80,9 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 			Namespace:    req.K8SNamespace,
 		},
 		Spec: tektonv1.PipelineRunSpec{
+			TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
+				ServiceAccountName: "default", // 在这里指定 ServiceAccount
+			},
 			PipelineSpec: &tektonv1.PipelineSpec{
 				Tasks: []tektonv1.PipelineTask{
 					{
@@ -94,7 +97,7 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 										Args: []string{
 											"-c",
 											// 清空目录后执行 git clone
-											"rm -rf $(workspaces.source.path)/* && git clone -b " + req.Repository.GitBranch + " " + req.Repository.GitUrl + " $(workspaces.source.path)",
+											"rm -rf $(workspaces.source.path)/* && git clone -b " + req.GitBranch + " " + req.GitUrl + " $(workspaces.source.path)",
 										},
 										WorkingDir: "$(workspaces.source.path)",
 									},
@@ -112,10 +115,9 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 							TaskSpec: tektonv1.TaskSpec{
 								Steps: []tektonv1.Step{
 									{
-										Name:    "build",
-										Image:   "192.168.31.41:82/cicd/maven:3.8.7-eclipse-temurin-11-alpine",
-										Command: []string{"/bin/sh"},
-										Script:  req.BuildScript,
+										Name:   "build",
+										Image:  "192.168.31.41:82/cicd/maven:3.8.7-eclipse-temurin-11-alpine",
+										Script: req.BuildScript,
 										//Args: []string{
 										//	"-c",
 										//	// 下载 settings.xml 并执行构建
@@ -157,8 +159,8 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 										Image:   "192.168.31.41:82/cicd/executor:v1.23.2",
 										Command: []string{"/kaniko/executor"},
 										Args: []string{
-											"--dockerfile", req.Docker.DockerfilePath,
-											"--destination", fmt.Sprintf("%s/%s:%s", req.Docker.Registry.URL, req.Docker.ImageName, req.Docker.ImageTag),
+											"--dockerfile", req.DockerfilePath,
+											"--destination", fmt.Sprintf("%s/%s:%s", req.RegistryURL, req.ImageName, req.ImageTag),
 											"--context", "$(workspaces.source.path)",
 											"--insecure",
 											"--skip-tls-verify",
@@ -167,8 +169,8 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 										},
 										Env: []corev1.EnvVar{
 											{Name: "DOCKER_CONFIG", Value: "/kaniko/.docker"},
-											{Name: "DOCKER_USERNAME", Value: req.Docker.Registry.Credentials.Username},
-											{Name: "DOCKER_PASSWORD", Value: req.Docker.Registry.Credentials.Password},
+											{Name: "DOCKER_USERNAME", Value: req.RegistryUser},
+											{Name: "DOCKER_PASSWORD", Value: req.RegistryPass},
 										},
 										VolumeMounts: []corev1.VolumeMount{
 											{
@@ -209,8 +211,8 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 							TaskSpec: tektonv1.TaskSpec{
 								Params: []tektonv1.ParamSpec{
 									{Name: "deploy-config-file", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: "03-deployment.yaml"}},
-									{Name: "image-url", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: fmt.Sprintf("%s/%s", req.Docker.Registry.URL, req.Docker.ImageName)}},
-									{Name: "image-tag", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: req.Docker.ImageTag}},
+									{Name: "image-url", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: fmt.Sprintf("%s/%s", req.RegistryURL, req.ImageName)}},
+									{Name: "image-tag", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: req.ImageTag}},
 								},
 								Steps: []tektonv1.Step{
 									{
@@ -257,9 +259,33 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 	}
 
 	// 创建 PipelineRun
-	_, err := clientSet.TektonV1().PipelineRuns(req.K8SNamespace).Create(context.Background(), pipelineRun, metav1.CreateOptions{})
+	createdPipelineRun, err := clientSet.TektonV1().PipelineRuns(req.K8SNamespace).Create(context.Background(), pipelineRun, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create PipelineRun: %v", err)
+	}
+	// 将创建的 PipelineRun 信息保存到数据库
+	newPipeline := &cicd.Pipelines{
+		Name:           createdPipelineRun.Name,
+		AppName:        req.AppName,
+		EnvName:        req.EnvName,
+		BuildScript:    req.BuildScript,
+		K8SNamespace:   req.K8SNamespace,
+		BaseImage:      req.BaseImage,
+		DockerfilePath: req.DockerfilePath,
+		ImageName:      req.ImageName,
+		ImageTag:       req.ImageTag,
+		RegistryURL:    req.RegistryURL,
+		RegistryUser:   req.RegistryUser,
+		RegistryPass:   req.RegistryPass,
+		GitUrl:         req.GitUrl,
+		GitBranch:      req.GitBranch,
+		GitCommitId:    req.GitCommitId,
+	}
+
+	// 保存到数据库
+	err = global.DYCLOUD_DB.Create(newPipeline).Error
+	if err != nil {
+		return fmt.Errorf("failed to save PipelineRun to database: %v", err)
 	}
 	return nil
 }

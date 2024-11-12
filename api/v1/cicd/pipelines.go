@@ -7,7 +7,10 @@ import (
 	"DYCLOUD/model/common/response"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/clientcmd"
+	"path/filepath"
 	"strconv"
 )
 
@@ -82,7 +85,20 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 	//request.CreatedBy = utils.GetUserID(c)
 	//request.CreatedName = utils.GetUserName(c)
 	//userId := utils.GetUserID(c)
-	//err = PipelineService.CreatePipelines(request)
+	configPath := filepath.Join("/Users/dujie/.kube", "config") // 替换为你测试时的实际路径
+	config, err := clientcmd.BuildConfigFromFlags("", configPath)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("加载 kubeconfig 失败", err.Error()), c)
+		return
+	}
+
+	// 初始化 Tekton 客户端
+	clientset, err := tektonclient.NewForConfig(config)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("创建 Tekton 客户端失败", err.Error()), c)
+		return
+	}
+	err = PipelineService.CreatePipelines(clientset, request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
