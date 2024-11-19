@@ -47,6 +47,7 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		cronJobRouter.Initk8sCronJobRouter(privateGroup, publicGroup)
 		cloudttyRouter := router.RouterGroupApp.CloudTTY
 		cloudttyRouter.Initk8sCloudTTYRouter(privateGroup, publicGroup)
+		cloudttyRouter.Initk8sNodeTTYRouter(privateGroup, publicGroup)
 		namespaceRouter := router.RouterGroupApp.Namespace
 		namespaceRouter.Initk8sNamespaceRouter(privateGroup, publicGroup)
 		endpointRouter := router.RouterGroupApp.EndPoint
