@@ -409,6 +409,14 @@ func (e *ApplicationsService) UpdateApplications(req *cicd.AppRequestBody) (*cic
 	global.DYCLOUD_DB = global.DYCLOUD_DB.Debug()
 	// 开启事务
 	tx := global.DYCLOUD_DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		} else if tx.Error != nil {
+			tx.Rollback()
+		}
+	}()
 
 	// 更新 App 数据
 	app := req.App
@@ -421,6 +429,18 @@ func (e *ApplicationsService) UpdateApplications(req *cicd.AppRequestBody) (*cic
 	if app.ID == 0 {
 		tx.Rollback()
 		return nil, fmt.Errorf("应用 ID 未生成或无效")
+	}
+	// **更新 Envs 数据**
+	// 获取当前环境 ID 列表
+	envIDs := make([]uint, 0)
+	for _, env := range req.Envs {
+		if env.ID != 0 {
+			envIDs = append(envIDs, env.ID)
+		}
+	}
+	// 删除不在请求中的环境记录
+	if err := tx.Where("app_id = ? AND id NOT IN ?", app.ID, envIDs).Delete(&cicd.Env{}).Error; err != nil {
+		return nil, fmt.Errorf("清理环境信息失败: %w", err)
 	}
 
 	// 更新 Envs 数据
@@ -438,38 +458,43 @@ func (e *ApplicationsService) UpdateApplications(req *cicd.AppRequestBody) (*cic
 			}
 		}
 	}
+	// **更新 Develop 数据**
+	// 删除原有 Develop 数据
+	if err := tx.Where("app_id = ? AND role_type = ?", app.ID, "develop").Delete(&cicd.Developer{}).Error; err != nil {
+		return nil, fmt.Errorf("清理开发者信息失败: %w", err)
+	}
 
 	// 更新 Develop 数据
 	for _, dev := range app.Develop {
-		dev.AppID = app.ID // 确保设置正确的 AppID
+		dev.AppID = app.ID
 		dev.RoleType = "develop"
-		if dev.ID == 0 { // 新增
-			if err := tx.Create(&dev).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("新增开发者信息失败: %w", err)
-			}
-		} else { // 更新
-			if err := tx.Model(&cicd.Developer{}).Where("id = ?", dev.ID).Updates(dev).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("更新开发者信息失败: %w", err)
-			}
+		dev.ID = 0 // 确保重新插入
+		if dev.Option != nil {
+			dev.Avatar = dev.Option.Avatar
+			dev.Nickname = dev.Option.Nickname
+			dev.Username = dev.Option.Username
+		}
+		if err := tx.Create(&dev).Error; err != nil {
+			return nil, fmt.Errorf("新增开发者信息失败: %w", err)
 		}
 	}
-
-	// 更新 Owner 数据
+	// **更新 Owner 数据**
+	// 删除原有 Owner 数据
+	if err := tx.Where("app_id = ? AND role_type = ?", app.ID, "owner").Delete(&cicd.Developer{}).Error; err != nil {
+		return nil, fmt.Errorf("清理拥有者信息失败: %w", err)
+	}
+	// 插入新的 Owner 数据
 	for _, owner := range app.Owner {
-		owner.AppID = app.ID // 确保设置正确的 AppID
+		owner.AppID = app.ID
 		owner.RoleType = "owner"
-		if owner.ID == 0 { // 新增
-			if err := tx.Create(&owner).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("新增拥有者信息失败: %w", err)
-			}
-		} else { // 更新
-			if err := tx.Model(&cicd.Developer{}).Where("id = ?", owner.ID).Updates(owner).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("更新拥有者信息失败: %w", err)
-			}
+		owner.ID = 0 // 确保重新插入
+		if owner.Option != nil {
+			owner.Avatar = owner.Option.Avatar
+			owner.Nickname = owner.Option.Nickname
+			owner.Username = owner.Option.Username
+		}
+		if err := tx.Create(&owner).Error; err != nil {
+			return nil, fmt.Errorf("新增拥有者信息失败: %w", err)
 		}
 	}
 

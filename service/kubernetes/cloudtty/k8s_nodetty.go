@@ -132,11 +132,10 @@ func (t *NodeTTYService) CreateNodeshell(cluster model.K8sCluster, body []byte, 
 	return err
 }
 
-//@function: NodeTTY
-//@description: 获取getNodeTTY
-//@param:
-//@return:
-
+// @function: NodeTTY
+// @description: 获取getNodeTTY
+// @param:
+// @return:
 func (t *NodeTTYService) Get(nodetty kubernetesReq.NodeTTY, uuid uuid.UUID) (podMsg *PodMessage, err error) {
 	clusterService := cluster2.K8sClusterService{}
 	// 获取集群信息

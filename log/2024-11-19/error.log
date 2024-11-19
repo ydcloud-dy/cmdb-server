@@ -34,3 +34,5 @@
 [DYCLOUD]2024-11-19 13:12:59.002	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/kubernetes/workload/pod/k8s_pod.go:280	获取失败!	{"error": "container node-shell is not valid for pod cloudtty-operator-controller-manager-669c8c97bc-lzq99"}
 [DYCLOUD]2024-11-19 13:19:18.694	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
 [DYCLOUD]2024-11-19 13:19:51.707	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:102	the server could not find the requested resource (get nodes.metrics.k8s.io)
+[DYCLOUD]2024-11-19 13:35:07.348	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:102	the server could not find the requested resource (get nodes.metrics.k8s.io)
+[DYCLOUD]2024-11-19 16:17:23.438	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
