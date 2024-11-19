@@ -102,15 +102,15 @@ func (ApplicationsApi *ApplicationsApi) DescribeApplications(c *gin.Context) {
 //	@param c
 func (ApplicationsApi *ApplicationsApi) CreateApplications(c *gin.Context) {
 
-	var request *cicd.Applications
+	var request *cicd.AppRequestBody
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
 	fmt.Println(request)
-	request.CreatedBy = utils.GetUserID(c)
-	request.CreatedName = utils.GetUserName(c)
+	request.App.CreatedBy = utils.GetUserID(c)
+	request.App.CreatedName = utils.GetUserName(c)
 	//userId := utils.GetUserID(c)
 	err = ApplicationService.CreateApplications(request)
 	if err != nil {
@@ -143,15 +143,15 @@ func (ApplicationsApi *ApplicationsApi) SyncBranches(c *gin.Context) {
 //	@receiver ApplicationsApi
 //	@param c
 func (ApplicationsApi *ApplicationsApi) UpdateApplications(c *gin.Context) {
-	var request *cicd.Applications
+	var request *cicd.AppRequestBody
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
 	fmt.Println(request, "================================")
-	request.UpdatedBy = utils.GetUserID(c)
-	request.UpdatedName = utils.GetUserName(c)
+	request.App.UpdatedBy = utils.GetUserID(c)
+	request.App.UpdatedName = utils.GetUserName(c)
 	data, err := ApplicationService.UpdateApplications(request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

@@ -1,0 +1,2 @@
+[DYCLOUD]2024-11-19 10:16:23.276	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:102	the server could not find the requested resource (get nodes.metrics.k8s.io)
+[DYCLOUD]2024-11-19 10:16:33.542	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/kubernetes/workload/pod/k8s_pod.go:280	获取失败!	{"error": "container web-tty is not valid for pod test-74c69cd8f4-2p2h9"}
