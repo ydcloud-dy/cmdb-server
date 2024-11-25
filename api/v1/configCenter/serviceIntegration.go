@@ -17,7 +17,7 @@ type ServiceIntegrationApi struct {
 
 // GetServiceIntegrationList
 //
-//	@Description: 获取cicd 服务列表
+//	@Description: 获取服务列表
 //	@receiver s
 //	@param c
 func (s *ServiceIntegrationApi) GetServiceIntegrationList(c *gin.Context) {
@@ -30,6 +30,28 @@ func (s *ServiceIntegrationApi) GetServiceIntegrationList(c *gin.Context) {
 	//Environment.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, total, err := ServiceIntegrationService.GetServiceIntegrationList(env)
+	if err != nil {
+		global.DYCLOUD_LOG.Error("执行失败!", zap.Error(err))
+		response.FailWithMessage("执行失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithDetailed(response.PageResult{
+		List:     data,
+		Total:    total,
+		Page:     env.Page,
+		PageSize: env.PageSize,
+	}, "获取成功", c)
+}
+func (s *ServiceIntegrationApi) GetRegistryList(c *gin.Context) {
+	var env *request.ServiceRequest
+	err := c.BindQuery(&env)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	//Environment.CreatedBy = utils.GetUserID(c)
+	//userId := utils.GetUserID(c)
+	data, total, err := ServiceIntegrationService.GetRegistryList(env)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("执行失败!", zap.Error(err))
 		response.FailWithMessage("执行失败:"+err.Error(), c)

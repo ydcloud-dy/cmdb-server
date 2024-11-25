@@ -37,7 +37,9 @@ func (s *K8sClusterRouter) InitK8sClusterRouter(Router *gin.RouterGroup, PublicR
 		//k8sClusterRouter.POST("clusters/detailById", k8sClusterApi.DescribeClusterById)
 	}
 	{
-		k8sClusterRouterWithoutRecord.POST("clusterById", k8sClusterApi.FindK8sCluster)   // 根据ID获取k8sCluster表
+		k8sClusterRouterWithoutRecord.POST("clusterById", k8sClusterApi.FindK8sCluster)        // 根据ID获取k8sCluster表
+		k8sClusterRouterWithoutRecord.GET("clusterByName", k8sClusterApi.FindK8sClusterByName) // 根据ID获取k8sCluster表
+
 		k8sClusterRouterWithoutRecord.GET("clusterList", k8sClusterApi.GetK8sClusterList) // 获取k8sCluster表列表
 	}
 	{

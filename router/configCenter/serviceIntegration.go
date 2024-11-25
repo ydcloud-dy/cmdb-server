@@ -14,6 +14,7 @@ func (s *ServiceIntegrationRouter) InitServiceIntrgrationRouter(Router *gin.Rout
 	//ServiceIntrgrationRouterWithoutAuth := PublicRouter.Group("cmdb")
 	{
 		ServiceIntegrationRouter.GET("service", ServiceIntegrationApi.GetServiceIntegrationList)
+		ServiceIntegrationRouter.GET("service/registry", ServiceIntegrationApi.GetRegistryList)
 
 		ServiceIntegrationRouter.POST("service", ServiceIntegrationApi.CreateServiceIntegration)
 		ServiceIntegrationRouter.PUT("service", ServiceIntegrationApi.UpdateServiceIntegration)

@@ -5,12 +5,12 @@ import (
 	"DYCLOUD/model/cicd"
 	request2 "DYCLOUD/model/cicd/request"
 	"DYCLOUD/model/common/response"
+	"DYCLOUD/service/kubernetes/cluster"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/clientcmd"
-	"path/filepath"
 	"strconv"
 )
 
@@ -81,14 +81,28 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request)
-	//request.CreatedBy = utils.GetUserID(c)
-	//request.CreatedName = utils.GetUserName(c)
-	//userId := utils.GetUserID(c)
-	configPath := filepath.Join("/Users/dujie/.kube", "config") // 替换为你测试时的实际路径
-	config, err := clientcmd.BuildConfigFromFlags("", configPath)
+	// 从请求中获取集群名称
+	clusterName := request.K8SClusterName
+	if clusterName == "" {
+		response.FailWithMessage("集群名称不能为空", c)
+		return
+	}
+
+	k8sService := cluster.K8sClusterService{}
+	cluster, err := k8sService.GetK8sClusterByName(request.K8SClusterName)
 	if err != nil {
-		response.FailWithMessage(fmt.Sprintf("加载 kubeconfig 失败", err.Error()), c)
+		response.FailWithMessage(fmt.Sprintf("获取集群信息失败: %v", err), c)
+		return
+	}
+	if cluster.KubeConfig == "" {
+		response.FailWithMessage("集群的 kubeConfig 不能为空", c)
+		return
+	}
+	fmt.Println(request)
+	// 解析 kubeConfig 内容
+	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(cluster.KubeConfig))
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("加载 kubeConfig 失败: %v", err), c)
 		return
 	}
 

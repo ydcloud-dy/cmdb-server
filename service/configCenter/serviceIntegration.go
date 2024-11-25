@@ -61,6 +61,35 @@ func (s *ServiceIntegrationService) GetServiceIntegrationList(req *request.Servi
 	}
 	return &serviceList, total, err
 }
+func (s *ServiceIntegrationService) GetRegistryList(req *request.ServiceRequest) (data *[]configCenter.ServiceIntegration, total int64, err error) {
+	limit := req.PageSize
+	offset := req.PageSize * (req.Page - 1)
+	// 创建db
+	db := global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{})
+	var serviceList []configCenter.ServiceIntegration
+
+	db.Where("type = 1")
+	err = db.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	if limit != 0 {
+		db = db.Limit(limit).Offset(offset)
+	}
+
+	err = db.Find(&serviceList).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 对每个配置进行解密并存储到 `DecryptedConfig`
+	for i := range serviceList {
+		if err := serviceList[i].DecryptConfig(); err != nil {
+			fmt.Printf("Error decrypting config for service %s: %v\n", serviceList[i].Name, err)
+		}
+	}
+	return &serviceList, total, err
+}
 
 // CreateServiceIntegration
 //

@@ -131,6 +131,10 @@ func (k8sClusterService *K8sClusterService) GetK8sCluster(id int) (k8sCluster cl
 	err = global.DYCLOUD_DB.Where("id = ?", id).Preload("Users").First(&k8sCluster).Error
 	return
 }
+func (k8sClusterService *K8sClusterService) GetK8sClusterByName(name string) (k8sCluster cluster2.K8sCluster, err error) {
+	err = global.DYCLOUD_DB.Where("name = ?", name).First(&k8sCluster).Error
+	return
+}
 
 // CreateCredential
 //

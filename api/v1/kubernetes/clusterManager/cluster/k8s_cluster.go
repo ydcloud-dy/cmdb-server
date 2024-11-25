@@ -440,6 +440,23 @@ func (k8sClusterApi *K8sClusterApi) FindK8sCluster(c *gin.Context) {
 		response.OkWithDetailed(response2.ClusterResponse{Cluster: cluster}, "获取成功", c)
 	}
 }
+func (k8sClusterApi *K8sClusterApi) FindK8sClusterByName(c *gin.Context) {
+	//var idInfo request.GetById
+	//_ = c.ShouldBindJSON(&idInfo)
+
+	//if err := utils.Verify(idInfo, utils.IdVerify); err != nil {
+	//	response.FailWithMessage(err.Error(), c)
+	//	return
+	//}
+	name := c.Query("name")
+	cluster, err := k8sClusterService.GetK8sClusterByName(name)
+	if err != nil {
+		global.DYCLOUD_LOG.Error("获取失败!", zap.Error(err))
+		response.FailWithMessage("获取失败", c)
+	} else {
+		response.OkWithDetailed(response2.ClusterResponse{Cluster: cluster}, "获取成功", c)
+	}
+}
 
 // GetK8sClusterList 分页获取k8sCluster表列表
 // @Tags K8sCluster
