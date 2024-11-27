@@ -4,7 +4,11 @@ import (
 	"DYCLOUD/global"
 	"DYCLOUD/model/cicd"
 	request "DYCLOUD/model/cicd/request"
+	common "DYCLOUD/model/common/request"
+	"DYCLOUD/model/kubernetes/pods"
+	"DYCLOUD/service/kubernetes/workload/pod"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type ApplicationsService struct{}
@@ -560,4 +564,24 @@ func (e *ApplicationsService) DeleteApplicationsByIds(ids *request.DeleteApplica
 		return err
 	}
 	return nil
+}
+
+func (e *ApplicationsService) GetApplicationDeploymentInfo(req *request.DeploymentInfoRequest) (*[]corev1.Pod, int, error) {
+	fmt.Println(req)
+	service := pod.K8sPodService{}
+	podList, total, err := service.GetPodList(pods.PodListReq{
+		ClusterId:     req.ClusterId,
+		Namespace:     req.Namespace,
+		LabelSelector: req.AppCode,
+		PageInfo: common.PageInfo{
+			Page:     1,
+			PageSize: 10000,
+		},
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	fmt.Println(podList)
+	fmt.Println(total)
+	return podList, total, nil
 }

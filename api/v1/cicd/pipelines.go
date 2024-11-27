@@ -87,7 +87,7 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 		response.FailWithMessage("集群名称不能为空", c)
 		return
 	}
-
+	fmt.Println(request)
 	k8sService := cluster.K8sClusterService{}
 	cluster, err := k8sService.GetK8sClusterByName(request.K8SClusterName)
 	if err != nil {

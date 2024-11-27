@@ -4,7 +4,9 @@ import (
 	"DYCLOUD/global"
 	"DYCLOUD/model/cicd"
 	request2 "DYCLOUD/model/cicd/request"
+	request3 "DYCLOUD/model/common/request"
 	"DYCLOUD/model/common/response"
+	"DYCLOUD/model/kubernetes/pods"
 	"DYCLOUD/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -199,4 +201,26 @@ func (ApplicationsApi *ApplicationsApi) DeleteApplicationsByIds(c *gin.Context) 
 		return
 	}
 	response.OkWithData("删除成功", c)
+}
+
+func (ApplicationsApi *ApplicationsApi) GetApplicationDeploymentInfo(c *gin.Context) {
+	request := request2.DeploymentInfoRequest{}
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	podlist, total, err := ApplicationService.GetApplicationDeploymentInfo(&request)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithDetailed(pods.PodListResponse{
+		Items: podlist,
+		Total: total,
+		PageInfo: request3.PageInfo{
+			Page:     1,
+			PageSize: 10000,
+		},
+	}, "获取成功", c)
 }
