@@ -21,7 +21,7 @@ type PipelinesService struct{}
 //	@param req
 //	@return envList
 //	@return err
-func (e *PipelinesService) GetPipelinesList(req *request.ApplicationRequest) (envList *[]cicd.Pipelines, total int64, err error) {
+func (e *PipelinesService) GetPipelinesList(req *request.PipelinesRequest) (envList *[]cicd.Pipelines, total int64, err error) {
 	limit := req.PageSize
 	offset := req.PageSize * (req.Page - 1)
 	db := global.DYCLOUD_DB.Model(&cicd.Pipelines{})
@@ -35,6 +35,7 @@ func (e *PipelinesService) GetPipelinesList(req *request.ApplicationRequest) (en
 		db = db.Where("created_at BETWEEN ? AND ?", req.StartCreatedAt, req.EndCreatedAt)
 		db = db.Where("name = ?", req.Keyword)
 	}
+	db.Where("app_name = ? and env_name = ?", req.AppCode, req.EnvCode)
 	var data []cicd.Pipelines
 	err = db.Count(&total).Error
 	if err != nil {
@@ -45,11 +46,54 @@ func (e *PipelinesService) GetPipelinesList(req *request.ApplicationRequest) (en
 		db = db.Limit(limit).Offset(offset)
 	}
 
-	err = db.Find(&data).Error
+	// 使用 Preload 加载关联的 stages 和 tasks
+	err = db.Preload("Stages.TaskList").Find(&data).Error
 	if err != nil {
-		return nil, 0, nil
+		return nil, 0, err
 	}
 	return &data, total, nil
+}
+func (e *PipelinesService) GetPipelinesStatus(client *tektonclient.Clientset, req *request.PipelinesRequest) (*request.PipelineRunStatus, error) {
+	var data *cicd.Pipelines
+	if err := global.DYCLOUD_DB.Where("app_name = ? and env_name = ?", req.AppCode, req.EnvCode).First(&data).Error; err != nil {
+		return nil, nil
+	}
+	pipelineRun, err := client.TektonV1().PipelineRuns(req.Namespace).Get(context.TODO(), data.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// 提取所需的 PipelineRun 状态信息
+	// 检查 Conditions 字段来获取状态
+	status := ""
+	if len(pipelineRun.Status.Conditions) > 0 {
+		// 这里假设第一个 Condition 即为我们关注的状态，实际中可能需要检查具体的 Condition 类型或状态
+		status = string(pipelineRun.Status.Conditions[0].Reason)
+	}
+	// 获取最近的开始时间和完成时间
+	lastRunTime := ""
+	duration := ""
+
+	if pipelineRun.Status.StartTime != nil && pipelineRun.Status.CompletionTime != nil {
+		// 从 metav1.Time 转换为 time.Time
+		startTime := pipelineRun.Status.StartTime.Time
+		completionTime := pipelineRun.Status.CompletionTime.Time
+
+		// 计算持续时间
+		lastRunTime = startTime.String()                  // 最近运行时间
+		duration = completionTime.Sub(startTime).String() // 耗时
+	}
+	// 构造返回结果
+	result := request.PipelineRunStatus{
+		Name:        pipelineRun.Name, // PipelineRun 名称
+		Status:      status,           // 状态
+		User:        data.CreatedName, // 假设从数据库中获取到的创建者
+		Branch:      data.GitBranch,   // 假设从数据库中获取到的 Git 分支
+		LastRunTime: lastRunTime,      // 最近运行时间
+		Duration:    duration,         // 耗时
+	}
+	fmt.Println(result)
+	return &result, nil
 }
 
 // DescribePipelines
@@ -142,7 +186,7 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 					},
 				}
 			case "2":
-				fmt.Printf("Building Image URL: %s:%s", fmt.Sprintf("%s/%s", task.Warehouse, task.SpatialName), task.MirrorTag)
+				fmt.Printf("Building Image URL: %s:%s", fmt.Sprintf("%s/%s/%s", task.Warehouse, task.SpatialName, req.AppName), task.MirrorTag)
 				pipelineTask = tektonv1.PipelineTask{
 					Name:     task.Name,
 					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
@@ -153,7 +197,7 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 							},
 							Params: []tektonv1.ParamSpec{
 								{Name: "dockerfile", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: task.Dockerfile}},
-								{Name: "image-url", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: fmt.Sprintf("%s/%s", task.Warehouse, task.SpatialName)}},
+								{Name: "image-url", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: fmt.Sprintf("%s/%s/%s", task.Warehouse, task.SpatialName, req.AppName)}},
 								{Name: "image-tag", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: task.MirrorTag}},
 							},
 							Workspaces: []tektonv1.WorkspaceDeclaration{
@@ -212,6 +256,8 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 				}
 			case "4":
 				fmt.Println("yaml: ", task.YamlResource)
+				fmt.Println("appName：", req.AppName)
+				fmt.Println("envName：", req.EnvName)
 				pipelineTask = tektonv1.PipelineTask{
 					Name:     task.Name,
 					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
@@ -230,6 +276,20 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 								StringVal: "$(tasks." + previousTaskName + ".results.built-image-url)", // 动态引用结果
 							},
 						},
+						{
+							Name: "app-name",
+							Value: tektonv1.ParamValue{
+								Type:      tektonv1.ParamTypeString,
+								StringVal: req.AppName, // 从请求中获取 AppName
+							},
+						},
+						{
+							Name: "env-name",
+							Value: tektonv1.ParamValue{
+								Type:      tektonv1.ParamTypeString,
+								StringVal: req.EnvName, // 从请求中获取 EnvName
+							},
+						},
 					},
 					TaskSpec: &tektonv1.EmbeddedTask{
 						TaskSpec: tektonv1.TaskSpec{
@@ -243,6 +303,16 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 									Name:        "built-image-url",
 									Type:        tektonv1.ParamTypeString,
 									Description: "Image URL to replace in YAML",
+								},
+								{
+									Name:        "app-name",
+									Type:        tektonv1.ParamTypeString,
+									Description: "app name",
+								},
+								{
+									Name:        "env-name",
+									Type:        tektonv1.ParamTypeString,
+									Description: "env name",
 								},
 							},
 							Steps: []tektonv1.Step{
@@ -262,7 +332,11 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 
 										# 使用 sed 替换镜像 URL
 										sed "s|__IMAGE__|$IMAGE_URL|g" $(workspaces.source.path)/original-deployment.yaml > $(workspaces.source.path)/updated-deployment.yaml
-										#sed 's/__IMAGE__/registry.cn-hangzhou.aliyuncs.com\/dyclouds\/yiyuetong:v1.0.0/g'  $(workspaces.source.path)/original-deployment.yaml > $(workspaces.source.path)/updated-deployment.yaml
+
+										# 动态修改 labels 部分
+										APP_NAME="$(params.app-name)"
+										ENV_NAME="$(params.env-name)"
+										sed -i "s|__APP_ENV_NAME__|$APP_NAME-$ENV_NAME|g" $(workspaces.source.path)/updated-deployment.yaml
 
 										# 打印更新后的 YAML 文件
 										cat $(workspaces.source.path)/updated-deployment.yaml
@@ -317,8 +391,9 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 	// 创建 PipelineRun
 	pipelineRun := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-pipeline-", req.AppName),
-			Namespace:    req.K8SNamespace,
+			//GenerateName: fmt.Sprintf("%s-pipeline-", req.Name),
+			Name:      req.Name,
+			Namespace: req.K8SNamespace,
 		},
 		Spec: tektonv1.PipelineRunSpec{
 			TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
@@ -352,7 +427,20 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 		return fmt.Errorf("failed to create PipelineRun: %v", err)
 	}
 
-	// 将创建的 PipelineRun 信息保存到数据库
+	// 开始事务
+	tx := global.DYCLOUD_DB.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("failed to begin transaction: %v", tx.Error)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r) // 重新抛出以触发上层的错误处理
+		}
+	}()
+
+	// 创建 Pipeline
 	newPipeline := &cicd.Pipelines{
 		Name:           createdPipelineRun.Name,
 		AppName:        req.AppName,
@@ -369,13 +457,62 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 		GitUrl:         req.GitUrl,
 		GitBranch:      req.GitBranch,
 		GitCommitId:    req.GitCommitId,
+		CreatedBy:      req.CreatedBy,
+		CreatedName:    req.CreatedName,
 	}
 
-	// 保存到数据库
-	err = global.DYCLOUD_DB.Create(newPipeline).Error
-	if err != nil {
-		return fmt.Errorf("failed to save PipelineRun to database: %v", err)
+	if err := tx.Create(newPipeline).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to save Pipeline to database: %v", err)
 	}
+
+	// 保存 Stages 和 Tasks 到数据库
+	for _, stage := range req.Stages {
+		newStage := &cicd.Stage{
+			PipelineID: newPipeline.ID, // 使用保存后的 Pipeline ID
+			Name:       stage.Name,
+		}
+
+		if err := tx.Create(newStage).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to save Stage to database: %v", err)
+		}
+
+		for _, task := range stage.TaskList {
+			newTask := &cicd.Task{
+				StageID:      newStage.ID, // 使用保存后的 Stage ID
+				PipelineID:   newPipeline.ID,
+				Name:         task.Name,
+				Branch:       task.Branch,
+				Image:        task.Image,
+				Plugin:       task.Plugin,
+				Script:       task.Script,
+				SpatialName:  task.SpatialName,
+				Warehouse:    task.Warehouse,
+				MirrorTag:    task.MirrorTag,
+				Dockerfile:   task.Dockerfile,
+				ContextPath:  task.ContextPath,
+				ProductName:  task.ProductName,
+				ProductPath:  task.ProductPath,
+				Version:      task.Version,
+				Resource:     task.Resource,
+				YamlResource: task.YamlResource,
+				GoalResource: task.GoalResource,
+				OpenScript:   task.OpenScript,
+			}
+
+			if err := tx.Create(newTask).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to save Task to database: %v", err)
+			}
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
 	return nil
 }
 

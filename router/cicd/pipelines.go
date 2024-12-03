@@ -17,6 +17,7 @@ func (s *PipelinesRouter) InitPipelinesRouter(Router *gin.RouterGroup, PublicRou
 		PipelinesRouter.DELETE("pipelines/:id", PipelineApi.DeletePipelines)
 		PipelinesRouter.GET("pipelines/:id", PipelineApi.DescribePipelines)
 		PipelinesRouter.DELETE("pipelines", PipelineApi.DeletePipelinesByIds)
+		PipelinesRouter.GET("pipelinesStatus", PipelineApi.GetPipelinesStatus)
 	}
 
 }

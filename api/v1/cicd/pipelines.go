@@ -6,6 +6,7 @@ import (
 	request2 "DYCLOUD/model/cicd/request"
 	"DYCLOUD/model/common/response"
 	"DYCLOUD/service/kubernetes/cluster"
+	"DYCLOUD/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
@@ -22,7 +23,7 @@ type PipelinesApi struct{}
 //	@receiver PipelinesApi
 //	@param c
 func (PipelinesApi *PipelinesApi) GetPipelinesList(c *gin.Context) {
-	var env *request2.ApplicationRequest
+	var env *request2.PipelinesRequest
 	err := c.BindQuery(&env)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -66,6 +67,54 @@ func (PipelinesApi *PipelinesApi) DescribePipelines(c *gin.Context) {
 		return
 	}
 	response.OkWithData(data, c)
+}
+
+func (PipelinesApi *PipelinesApi) GetPipelinesStatus(c *gin.Context) {
+	var request *request2.PipelinesRequest
+	err := c.BindQuery(&request)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+
+	// 从请求中获取集群名称
+	clusterName := request.Cluster_ID
+	if clusterName == 0 {
+		response.FailWithMessage("集群ID不能为空", c)
+		return
+	}
+	fmt.Println(request)
+	k8sService := cluster.K8sClusterService{}
+	cluster, err := k8sService.GetK8sCluster(request.Cluster_ID)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("获取集群信息失败: %v", err), c)
+		return
+	}
+	if cluster.KubeConfig == "" {
+		response.FailWithMessage("集群的 kubeConfig 不能为空", c)
+		return
+	}
+	fmt.Println(request)
+	// 解析 kubeConfig 内容
+	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(cluster.KubeConfig))
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("加载 kubeConfig 失败: %v", err), c)
+		return
+	}
+
+	// 初始化 Tekton 客户端
+	clientset, err := tektonclient.NewForConfig(config)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("创建 Tekton 客户端失败", err.Error()), c)
+		return
+	}
+	data, err := PipelineService.GetPipelinesStatus(clientset, request)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("获取pipeline失败", err.Error()), c)
+		return
+	}
+	response.OkWithDetailed(data, "获取成功", c)
+
 }
 
 // CreatePipelines
@@ -112,6 +161,12 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 		response.FailWithMessage(fmt.Sprintf("创建 Tekton 客户端失败", err.Error()), c)
 		return
 	}
+	request.CreatedBy = utils.GetUserID(c)
+	request.CreatedName = utils.GetUserName(c)
+	fmt.Println(request.CreatedBy)
+	fmt.Println(request.CreatedName)
+	fmt.Println(request)
+
 	err = PipelineService.CreatePipelines(clientset, request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
