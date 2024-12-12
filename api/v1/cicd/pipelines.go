@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"strconv"
 )
@@ -166,8 +167,13 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 	fmt.Println(request.CreatedBy)
 	fmt.Println(request.CreatedName)
 	fmt.Println(request)
+	k8sClient, err := kubernetes.NewForConfig(config)
 
-	err = PipelineService.CreatePipelines(clientset, request)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("创建 k8s 客户端失败", err.Error()), c)
+		return
+	}
+	err = PipelineService.CreatePipelines(k8sClient, clientset, request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return

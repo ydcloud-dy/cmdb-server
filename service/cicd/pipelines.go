@@ -9,7 +9,11 @@ import (
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/client-go/kubernetes"
 )
 
 type PipelinesService struct{}
@@ -35,7 +39,12 @@ func (e *PipelinesService) GetPipelinesList(req *request.PipelinesRequest) (envL
 		db = db.Where("created_at BETWEEN ? AND ?", req.StartCreatedAt, req.EndCreatedAt)
 		db = db.Where("name = ?", req.Keyword)
 	}
-	db.Where("app_name = ? and env_name = ?", req.AppCode, req.EnvCode)
+	if req.AppCode != "" {
+		db.Where("app_name = ?", req.AppCode)
+	}
+	if req.EnvCode != "" {
+		db.Where("env_code = ?", req.EnvCode)
+	}
 	var data []cicd.Pipelines
 	err = db.Count(&total).Error
 	if err != nil {
@@ -104,11 +113,14 @@ func (e *PipelinesService) GetPipelinesStatus(client *tektonclient.Clientset, re
 //	@return *cicd.Pipelines
 //	@return error
 func (e *PipelinesService) DescribePipelines(id int) (*cicd.Pipelines, error) {
-	var data *cicd.Pipelines
-	if err := global.DYCLOUD_DB.Where("id = ?", id).First(&data).Error; err != nil {
+	var data cicd.Pipelines
+	if err := global.DYCLOUD_DB.
+		Preload("Stages.TaskList"). // 预加载 Stages 及其 TaskList
+		Where("id = ?", id).
+		First(&data).Error; err != nil {
 		return nil, err
 	}
-	return data, nil
+	return &data, nil
 }
 
 // CreatePipelines
@@ -117,7 +129,7 @@ func (e *PipelinesService) DescribePipelines(id int) (*cicd.Pipelines, error) {
 //	@receiver e
 //	@param req
 //	@return error
-func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, req *cicd.Pipelines) error {
+func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clientSet *tektonclient.Clientset, req *cicd.Pipelines) error {
 	pipelineTasks := []tektonv1.PipelineTask{}
 
 	// 第一步：拉取代码的任务
@@ -387,44 +399,128 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 			previousTaskName = task.Name
 		}
 	}
-
-	// 创建 PipelineRun
-	pipelineRun := &tektonv1.PipelineRun{
+	// 创建 ServiceAccount
+	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			//GenerateName: fmt.Sprintf("%s-pipeline-", req.Name),
 			Name:      req.Name,
 			Namespace: req.K8SNamespace,
 		},
-		Spec: tektonv1.PipelineRunSpec{
-			TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
-				ServiceAccountName: "deploy-sa", // 使用新创建的 ServiceAccount
+	}
+	_, err := k8sClient.CoreV1().ServiceAccounts(req.K8SNamespace).Create(context.Background(), serviceAccount, metav1.CreateOptions{})
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create ServiceAccount: %v", err)
+	}
 
+	// 创建 Role
+	role := &rbacV1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name + "-role",
+			Namespace: req.K8SNamespace,
+		},
+		Rules: []rbacV1.PolicyRule{
+			{
+				APIGroups: []string{""},
+				Resources: []string{"pods"},
+				Verbs:     []string{"get", "list", "watch", "create", "delete", "update", "patch"},
 			},
-			PipelineSpec: &tektonv1.PipelineSpec{
-				Tasks: pipelineTasks,
+			{
+				APIGroups: []string{"apps"},
+				Resources: []string{"deployments"},
+				Verbs:     []string{"get", "list", "watch", "create", "delete", "update", "patch"},
 			},
-			Workspaces: []tektonv1.WorkspaceBinding{
+		},
+	}
+	_, err = k8sClient.RbacV1().Roles(req.K8SNamespace).Create(context.Background(), role, metav1.CreateOptions{})
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create Role: %v", err)
+	}
+
+	// 创建 RoleBinding
+	roleBinding := &rbacV1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name + "-rolebinding",
+			Namespace: req.K8SNamespace,
+		},
+		RoleRef: rbacV1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     req.Name + "-role",
+		},
+		Subjects: []rbacV1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      req.Name,
+				Namespace: req.K8SNamespace,
+			},
+		},
+	}
+	_, err = k8sClient.RbacV1().RoleBindings(req.K8SNamespace).Create(context.Background(), roleBinding, metav1.CreateOptions{})
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create RoleBinding: %v", err)
+	}
+	// 创建 PipelineRun
+	//pipelineRun := &tektonv1.PipelineRun{
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		//GenerateName: fmt.Sprintf("%s-pipeline-", req.Name),
+	//		Name:      req.Name,
+	//		Namespace: req.K8SNamespace,
+	//	},
+	//	Spec: tektonv1.PipelineRunSpec{
+	//		TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
+	//			ServiceAccountName: "deploy-sa", // 使用新创建的 ServiceAccount
+	//
+	//		},
+	//		PipelineSpec: &tektonv1.PipelineSpec{
+	//			Tasks: pipelineTasks,
+	//		},
+	//		Workspaces: []tektonv1.WorkspaceBinding{
+	//			{
+	//				Name: "source",
+	//				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+	//					ClaimName: "shared-workspace-pvc", // 使用你已有的 PVC
+	//				},
+	//				SubPath: fmt.Sprintf("run-%s", metav1.Now().Format("20060102150405")),
+	//			},
+	//			{
+	//				Name: "maven-cache",
+	//				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+	//					ClaimName: "maven-cache-pvc", // 缓存 Maven 构建依赖的 PVC
+	//				},
+	//			},
+	//		},
+	//	},
+	//}
+	//
+	//// 创建 PipelineRun
+	//createdPipelineRun, err := clientSet.TektonV1().PipelineRuns(req.K8SNamespace).Create(context.Background(), pipelineRun, metav1.CreateOptions{})
+	//if err != nil {
+	//	return fmt.Errorf("failed to create PipelineRun: %v", err)
+	//}
+	// 创建 Pipeline 模板
+	pipeline := &tektonv1.Pipeline{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name,
+			Namespace: req.K8SNamespace,
+		},
+
+		Spec: tektonv1.PipelineSpec{
+			Tasks: pipelineTasks,
+
+			Workspaces: []tektonv1.PipelineWorkspaceDeclaration{
 				{
 					Name: "source",
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "shared-workspace-pvc", // 使用你已有的 PVC
-					},
-					SubPath: fmt.Sprintf("run-%s", metav1.Now().Format("20060102150405")),
 				},
 				{
 					Name: "maven-cache",
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "maven-cache-pvc", // 缓存 Maven 构建依赖的 PVC
-					},
 				},
 			},
 		},
 	}
 
-	// 创建 PipelineRun
-	createdPipelineRun, err := clientSet.TektonV1().PipelineRuns(req.K8SNamespace).Create(context.Background(), pipelineRun, metav1.CreateOptions{})
+	// 创建 Pipeline
+	_, err = clientSet.TektonV1().Pipelines(req.K8SNamespace).Create(context.Background(), pipeline, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create PipelineRun: %v", err)
+		return fmt.Errorf("failed to create Pipeline: %v", err)
 	}
 
 	// 开始事务
@@ -442,7 +538,7 @@ func (e *PipelinesService) CreatePipelines(clientSet *tektonclient.Clientset, re
 
 	// 创建 Pipeline
 	newPipeline := &cicd.Pipelines{
-		Name:           createdPipelineRun.Name,
+		Name:           pipeline.Name,
 		AppName:        req.AppName,
 		EnvName:        req.EnvName,
 		BuildScript:    req.BuildScript,

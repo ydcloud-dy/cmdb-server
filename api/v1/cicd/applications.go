@@ -96,6 +96,20 @@ func (ApplicationsApi *ApplicationsApi) DescribeApplications(c *gin.Context) {
 	}
 	response.OkWithData(data, c)
 }
+func (ApplicationsApi *ApplicationsApi) DescribeApplicationsByName(c *gin.Context) {
+	name := c.Query("app_code")
+
+	fmt.Println(name)
+	//Applications.CreatedBy = utils.GetUserID(c)
+	//userId := utils.GetUserID(c)
+	data, err := ApplicationService.DescribeApplicationsByName(name)
+	if err != nil {
+		global.DYCLOUD_LOG.Error("执行失败!", zap.Error(err))
+		response.FailWithMessage("执行失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithData(data, c)
+}
 
 // CreateApplications
 //

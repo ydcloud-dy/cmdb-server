@@ -156,6 +156,54 @@ func (e *ApplicationsService) DescribeApplications(id int) (*cicd.App, error) {
 
 	return &app, nil
 }
+func (e *ApplicationsService) DescribeApplicationsByName(name string) (*cicd.App, error) {
+	// 查询 App 主数据
+	var app cicd.App
+	if err := global.DYCLOUD_DB.Where("app_code = ?", name).First(&app).Error; err != nil {
+		return nil, fmt.Errorf("查询应用信息失败: %w", err)
+	}
+
+	// 查询关联的 Envs 数据
+	var envs []cicd.Env
+	if err := global.DYCLOUD_DB.Where("app_id = ?", app.ID).Find(&envs).Error; err != nil {
+		return nil, fmt.Errorf("查询环境信息失败: %w", err)
+	}
+	app.Envs = envs
+
+	// 查询关联的 Develop 数据
+	var developers []cicd.Developer
+	if err := global.DYCLOUD_DB.Where("app_id = ? AND role_type = ?", app.ID, "develop").Find(&developers).Error; err != nil {
+		return nil, fmt.Errorf("查询开发者信息失败: %w", err)
+	}
+
+	// 填充 Develop 的 Option 数据
+	for i := range developers {
+		developers[i].Option = &cicd.Option{
+			Avatar:   developers[i].Avatar,
+			Nickname: developers[i].Nickname,
+			Username: developers[i].Username,
+		}
+	}
+	app.Develop = developers
+
+	// 查询关联的 Owner 数据
+	var owners []cicd.Developer
+	if err := global.DYCLOUD_DB.Where("app_id = ? AND role_type = ?", app.ID, "owner").Find(&owners).Error; err != nil {
+		return nil, fmt.Errorf("查询拥有者信息失败: %w", err)
+	}
+
+	// 填充 Owner 的 Option 数据
+	for i := range owners {
+		owners[i].Option = &cicd.Option{
+			Avatar:   owners[i].Avatar,
+			Nickname: owners[i].Nickname,
+			Username: owners[i].Username,
+		}
+	}
+	app.Owner = owners
+
+	return &app, nil
+}
 
 // CreateApplications
 //

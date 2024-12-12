@@ -16,6 +16,8 @@ func (s *ApplicationsRouter) InitApplicationsRouter(Router *gin.RouterGroup, Pub
 		ApplicationsRouter.PUT("applications", ApplicationApi.UpdateApplications)
 		ApplicationsRouter.DELETE("applications/:id", ApplicationApi.DeleteApplications)
 		ApplicationsRouter.GET("applications/:id", ApplicationApi.DescribeApplications)
+		ApplicationsRouter.GET("applicationsByName", ApplicationApi.DescribeApplicationsByName)
+
 		ApplicationsRouter.DELETE("applications", ApplicationApi.DeleteApplicationsByIds)
 		ApplicationsRouter.POST("applications/:id/syncBranches", ApplicationApi.SyncBranches)
 		ApplicationsRouter.GET("applications/:id/branches", ApplicationApi.GetBranchesList)
