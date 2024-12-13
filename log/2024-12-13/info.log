@@ -1,0 +1,18 @@
+[DYCLOUD]2024-12-13 09:36:06.413	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/gorm.go:73	register table success
+[DYCLOUD]2024-12-13 09:36:06.415	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/redis.go:35	redis connect ping response:	{"name": "", "pong": "PONG"}
+[DYCLOUD]2024-12-13 09:36:06.416	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/redis.go:35	redis connect ping response:	{"name": "cache", "pong": "PONG"}
+[DYCLOUD]2024-12-13 09:36:06.417	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/router.go:60	register swagger handler
+[DYCLOUD]2024-12-13 09:36:06.456	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/router.go:105	router register success
+[DYCLOUD]2024-12-13 09:36:06.456	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:39	server run success on 	{"address": ":8888"}
+[DYCLOUD]2024-12-13 09:41:24.143	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/gorm.go:73	register table success
+[DYCLOUD]2024-12-13 09:41:24.145	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/redis.go:35	redis connect ping response:	{"name": "", "pong": "PONG"}
+[DYCLOUD]2024-12-13 09:41:24.146	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/redis.go:35	redis connect ping response:	{"name": "cache", "pong": "PONG"}
+[DYCLOUD]2024-12-13 09:41:24.146	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/router.go:60	register swagger handler
+[DYCLOUD]2024-12-13 09:41:24.185	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/router.go:105	router register success
+[DYCLOUD]2024-12-13 09:41:24.185	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:39	server run success on 	{"address": ":8888"}
+[DYCLOUD]2024-12-13 10:20:23.397	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/gorm.go:73	register table success
+[DYCLOUD]2024-12-13 10:20:23.399	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/redis.go:35	redis connect ping response:	{"name": "", "pong": "PONG"}
+[DYCLOUD]2024-12-13 10:20:23.399	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/redis.go:35	redis connect ping response:	{"name": "cache", "pong": "PONG"}
+[DYCLOUD]2024-12-13 10:20:23.400	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/router.go:60	register swagger handler
+[DYCLOUD]2024-12-13 10:20:23.446	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/router.go:105	router register success
+[DYCLOUD]2024-12-13 10:20:23.447	[34minfo[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:39	server run success on 	{"address": ":8888"}

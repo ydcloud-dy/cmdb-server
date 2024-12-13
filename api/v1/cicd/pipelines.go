@@ -193,10 +193,50 @@ func (PipelinesApi *PipelinesApi) UpdatePipelines(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request, "================================")
-	//request.UpdatedBy = utils.GetUserID(c)
-	//request.UpdatedName = utils.GetUserName(c)
-	data, err := PipelineService.UpdatePipelines(request)
+	// 从请求中获取集群名称
+	clusterName := request.K8SClusterName
+	if clusterName == "" {
+		response.FailWithMessage("集群名称不能为空", c)
+		return
+	}
+	fmt.Println(request)
+	k8sService := cluster.K8sClusterService{}
+	cluster, err := k8sService.GetK8sClusterByName(request.K8SClusterName)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("获取集群信息失败: %v", err), c)
+		return
+	}
+	if cluster.KubeConfig == "" {
+		response.FailWithMessage("集群的 kubeConfig 不能为空", c)
+		return
+	}
+	fmt.Println(request)
+	// 解析 kubeConfig 内容
+	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(cluster.KubeConfig))
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("加载 kubeConfig 失败: %v", err), c)
+		return
+	}
+
+	// 初始化 Tekton 客户端
+	clientset, err := tektonclient.NewForConfig(config)
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("创建 Tekton 客户端失败", err.Error()), c)
+		return
+	}
+	request.CreatedBy = utils.GetUserID(c)
+	request.CreatedName = utils.GetUserName(c)
+	fmt.Println(request.CreatedBy)
+	fmt.Println(request.CreatedName)
+	fmt.Println(request)
+	k8sClient, err := kubernetes.NewForConfig(config)
+
+	if err != nil {
+		response.FailWithMessage(fmt.Sprintf("创建 k8s 客户端失败", err.Error()), c)
+		return
+	}
+
+	data, err := PipelineService.UpdatePipelines(k8sClient, clientset, request)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return

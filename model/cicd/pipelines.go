@@ -28,10 +28,11 @@ type Pipelines struct {
 	DeletedBy      uint    `gorm:"column:deleted_by;comment:删除者"`
 }
 type Stage struct {
-	ID         uint   `gorm:"primaryKey"`
-	PipelineID uint   `json:"pipeline_id"`
-	Name       string `json:"name"`
-	TaskList   []Task `json:"task_list" gorm:"foreignKey:StageID"`
+	ID         uint    `gorm:"primaryKey" gorm:"column:id;"`
+	PipelineID uint    `json:"pipeline_id" gorm:"column:pipeline_id;"`
+	Name       string  `json:"name"`
+	TaskList   []Task  `json:"task_list" gorm:"foreignKey:StageID"`
+	Params     []Param `json:"params" gorm:"foreignKey:StageID"` // 添加 params 字段
 }
 
 func (s *Stage) TableName() string {
@@ -42,9 +43,21 @@ func (p *Pipelines) TableName() string {
 	return "cicd_pipelines"
 }
 
+type Param struct {
+	ID           uint   `gorm:"primaryKey" gorm:"column:id;"`
+	StageID      uint   `json:"stage_id" gorm:"column:stage_id;"`
+	PipelineID   uint   `json:"pipeline_id" gorm:"column:pipeline_id;"`
+	Name         string `json:"name"`
+	DefaultValue string `json:"default_value"`
+}
+
+func (p *Param) TableName() string {
+	return "cicd_pipelines_params"
+}
+
 type Task struct {
-	ID           uint   `gorm:"primaryKey"`
-	StageID      uint   `json:"stage_id"`
+	ID           uint   `gorm:"primaryKey" gorm:"column:id;"`
+	StageID      uint   `json:"stage_id" gorm:"column:stage_id;"`
 	Name         string `json:"name"`
 	Branch       string `json:"branch"`
 	Image        string `json:"image"`
@@ -62,7 +75,7 @@ type Task struct {
 	YamlResource string `json:"yaml_resource"`
 	GoalResource string `json:"goal_resource"`
 	OpenScript   string `json:"open_script"`
-	PipelineID   uint   `json:"pipeline_id"`
+	PipelineID   uint   `json:"pipeline_id" gorm:"column:pipeline_id;"`
 }
 
 func (t *Task) TableName() string {

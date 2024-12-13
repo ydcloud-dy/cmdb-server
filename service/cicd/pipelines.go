@@ -116,6 +116,7 @@ func (e *PipelinesService) DescribePipelines(id int) (*cicd.Pipelines, error) {
 	var data cicd.Pipelines
 	if err := global.DYCLOUD_DB.
 		Preload("Stages.TaskList"). // 预加载 Stages 及其 TaskList
+		Preload("Stages.Params").
 		Where("id = ?", id).
 		First(&data).Error; err != nil {
 		return nil, err
@@ -573,7 +574,20 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 			tx.Rollback()
 			return fmt.Errorf("failed to save Stage to database: %v", err)
 		}
+		// 保存 Stage 的 Params
+		for _, param := range stage.Params {
+			newParam := &cicd.Param{
+				StageID:      newStage.ID, // 使用保存后的 Stage ID
+				PipelineID:   newPipeline.ID,
+				Name:         param.Name,
+				DefaultValue: param.DefaultValue,
+			}
 
+			if err := tx.Create(newParam).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to save Param to database: %v", err)
+			}
+		}
 		for _, task := range stage.TaskList {
 			newTask := &cicd.Task{
 				StageID:      newStage.ID, // 使用保存后的 Stage ID
@@ -642,16 +656,396 @@ func (e *PipelinesService) UpdateAppBranch(branch *cicd.AppBranch) error {
 //	@param req
 //	@return *cicd.Pipelines
 //	@return error
-func (e *PipelinesService) UpdatePipelines(req *cicd.Pipelines) (*cicd.Pipelines, error) {
-	//fmt.Println(req)
-	//data, err := e.DescribePipelines(int(req.ID))
-	//if err != nil {
-	//	return nil, err
-	//}
-	//data = req
-	//if err = global.DYCLOUD_DB.Model(&cicd.Pipelines{}).Where("id = ?", req.ID).Omit("ID").Updates(&req).Error; err != nil {
-	//	return nil, err
-	//}
+func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clientSet *tektonclient.Clientset, req *cicd.Pipelines) (*cicd.Pipelines, error) {
+	pipelineTasks := []tektonv1.PipelineTask{}
+
+	// 第一步：拉取代码的任务
+	pipelineTasks = append(pipelineTasks, tektonv1.PipelineTask{
+		Name: "clone-source",
+		TaskSpec: &tektonv1.EmbeddedTask{
+			TaskSpec: tektonv1.TaskSpec{
+				Steps: []tektonv1.Step{
+					{
+						Name:    "clone",
+						Image:   "swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/alpine/git:v2.45.2",
+						Command: []string{"/bin/sh"},
+						Args: []string{
+							"-c",
+							fmt.Sprintf("rm -rf $(workspaces.source.path)/* && git clone -b %s %s $(workspaces.source.path)", req.GitBranch, req.GitUrl),
+						},
+						WorkingDir: "$(workspaces.source.path)",
+					},
+				},
+			},
+		},
+		Workspaces: []tektonv1.WorkspacePipelineTaskBinding{
+			{Name: "source", Workspace: "source"},
+		},
+	})
+
+	// 遍历前端传递的阶段数并创建 PipelineTask
+	previousTaskName := "clone-source" // 第一个任务是 clone-source，后续任务将依赖于它
+	for _, stage := range req.Stages {
+		for _, task := range stage.TaskList {
+			var pipelineTask tektonv1.PipelineTask
+
+			// 根据任务类型选择不同的逻辑
+			switch task.Branch {
+			case "1":
+				pipelineTask = tektonv1.PipelineTask{
+					Name:     task.Name,
+					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
+					TaskSpec: &tektonv1.EmbeddedTask{
+						TaskSpec: tektonv1.TaskSpec{
+							Steps: []tektonv1.Step{
+								{
+									Name:       "execute-script",
+									Image:      task.Image,
+									Script:     task.Script,
+									WorkingDir: "$(workspaces.source.path)",
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											Name:      "maven-cache",
+											MountPath: "/root/.m2", // 缓存 Maven 依赖，如果不是 Maven，也可以灵活替换路径
+										},
+									},
+								},
+							},
+							Volumes: []corev1.Volume{
+								{
+									Name: "maven-cache",
+									VolumeSource: corev1.VolumeSource{
+										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+											ClaimName: "maven-cache-pvc", // 使用你创建的 PVC
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			case "2":
+				fmt.Printf("Building Image URL: %s:%s", fmt.Sprintf("%s/%s/%s", task.Warehouse, task.SpatialName, req.AppName), task.MirrorTag)
+				pipelineTask = tektonv1.PipelineTask{
+					Name:     task.Name,
+					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
+					TaskSpec: &tektonv1.EmbeddedTask{
+						TaskSpec: tektonv1.TaskSpec{
+							Results: []tektonv1.TaskResult{
+								{Name: "built-image-url", Description: "The URL of the built image."},
+							},
+							Params: []tektonv1.ParamSpec{
+								{Name: "dockerfile", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: task.Dockerfile}},
+								{Name: "image-url", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: fmt.Sprintf("%s/%s/%s", task.Warehouse, task.SpatialName, req.AppName)}},
+								{Name: "image-tag", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: task.MirrorTag}},
+							},
+							Workspaces: []tektonv1.WorkspaceDeclaration{
+								{Name: "source"},
+							},
+							Steps: []tektonv1.Step{
+								{
+									Name:    "docker-build",
+									Image:   "registry.cn-hangzhou.aliyuncs.com/dyclouds/executor:v1.23.2",
+									Command: []string{"/kaniko/executor"},
+									Args: []string{
+										"--dockerfile=$(params.dockerfile)",
+										"--context=$(workspaces.source.path)",
+										"--destination=$(params.image-url):$(params.image-tag)",
+										"--insecure",
+										"--skip-tls-verify",
+									},
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											Name:      "kaniko-config",
+											MountPath: "/kaniko/.docker/config.json",
+											SubPath:   ".dockerconfigjson", // 修改为正确的 SubPath
+										},
+									},
+									Env: []corev1.EnvVar{
+										{Name: "DOCKER_CONFIG", Value: "/kaniko/.docker"},
+									},
+								},
+								{
+									Name:    "output-result",
+									Image:   "swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/alpine:latest",
+									Command: []string{"sh", "-c"},
+									Args: []string{
+										"echo $(params.image-url):$(params.image-tag) > /tekton/results/built-image-url",
+									},
+								},
+							},
+							Volumes: []corev1.Volume{
+								{
+									Name: "kaniko-config",
+									VolumeSource: corev1.VolumeSource{
+										Secret: &corev1.SecretVolumeSource{
+											SecretName: "registry-secret", // 正确引用 k8s Secret
+											Items: []corev1.KeyToPath{
+												{
+													Key:  ".dockerconfigjson", // 确保与 Secret 的 Key 匹配
+													Path: ".dockerconfigjson", // 挂载为 config.json
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			case "4":
+				fmt.Println("yaml: ", task.YamlResource)
+				fmt.Println("appName：", req.AppName)
+				fmt.Println("envName：", req.EnvName)
+				pipelineTask = tektonv1.PipelineTask{
+					Name:     task.Name,
+					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
+					Params: []tektonv1.Param{
+						{
+							Name: "yaml-content",
+							Value: tektonv1.ParamValue{
+								Type:      tektonv1.ParamTypeString,
+								StringVal: task.YamlResource, // 从前端 JSON 获取完整 YAML 内容
+							},
+						},
+						{
+							Name: "built-image-url",
+							Value: tektonv1.ParamValue{
+								Type:      tektonv1.ParamTypeString,
+								StringVal: "$(tasks." + previousTaskName + ".results.built-image-url)", // 动态引用结果
+							},
+						},
+						{
+							Name: "app-name",
+							Value: tektonv1.ParamValue{
+								Type:      tektonv1.ParamTypeString,
+								StringVal: req.AppName, // 从请求中获取 AppName
+							},
+						},
+						{
+							Name: "env-name",
+							Value: tektonv1.ParamValue{
+								Type:      tektonv1.ParamTypeString,
+								StringVal: req.EnvName, // 从请求中获取 EnvName
+							},
+						},
+					},
+					TaskSpec: &tektonv1.EmbeddedTask{
+						TaskSpec: tektonv1.TaskSpec{
+							Params: []tektonv1.ParamSpec{
+								{
+									Name:        "yaml-content",
+									Type:        tektonv1.ParamTypeString,
+									Description: "YAML resource for deployment",
+								},
+								{
+									Name:        "built-image-url",
+									Type:        tektonv1.ParamTypeString,
+									Description: "Image URL to replace in YAML",
+								},
+								{
+									Name:        "app-name",
+									Type:        tektonv1.ParamTypeString,
+									Description: "app name",
+								},
+								{
+									Name:        "env-name",
+									Type:        tektonv1.ParamTypeString,
+									Description: "env name",
+								},
+							},
+							Steps: []tektonv1.Step{
+								{
+									Name:  "update-yaml", // 更新 YAML 文件中的镜像信息
+									Image: "registry.cn-hangzhou.aliyuncs.com/dyclouds/alpine:latest",
+									Script: `
+										# 打印调试信息
+										echo "Original YAML Content:"
+										echo "$(params.yaml-content)"
+										echo "Built Image URL:"
+										echo "$(params.built-image-url)"
+							
+										# 写入原始 YAML 内容
+										printf "%s" "$(params.yaml-content)" > $(workspaces.source.path)/original-deployment.yaml
+										IMAGE_URL=$(echo "$(params.built-image-url)" | sed 's/[&/\]/\\&/g')
+
+										# 使用 sed 替换镜像 URL
+										sed "s|__IMAGE__|$IMAGE_URL|g" $(workspaces.source.path)/original-deployment.yaml > $(workspaces.source.path)/updated-deployment.yaml
+
+										# 动态修改 labels 部分
+										APP_NAME="$(params.app-name)"
+										ENV_NAME="$(params.env-name)"
+										sed -i "s|__APP_ENV_NAME__|$APP_NAME-$ENV_NAME|g" $(workspaces.source.path)/updated-deployment.yaml
+
+										# 打印更新后的 YAML 文件
+										cat $(workspaces.source.path)/updated-deployment.yaml
+									`,
+								},
+								{
+									Name:    "apply-kubectl", // 应用更新后的 YAML 文件
+									Image:   task.Image,      // 使用前端传递的 kubectl 镜像
+									Command: []string{"kubectl"},
+									Args: []string{
+										"apply", "-f", "$(workspaces.source.path)/updated-deployment.yaml",
+									},
+								},
+							},
+						},
+					},
+					Workspaces: []tektonv1.WorkspacePipelineTaskBinding{
+						{Name: "source", Workspace: "source"},
+					},
+				}
+			case "3":
+				pipelineTask = tektonv1.PipelineTask{
+					Name:     task.Name,
+					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
+					TaskSpec: &tektonv1.EmbeddedTask{
+						TaskSpec: tektonv1.TaskSpec{
+							Steps: []tektonv1.Step{
+								{
+									Name:    "upload-to-oss",
+									Image:   task.Image,
+									Command: []string{"/bin/sh"},
+									Args: []string{
+										"-c",
+										fmt.Sprintf("ossutil cp %s oss://%s/%s -u", task.ProductPath, task.SpatialName, task.ProductName),
+									},
+									WorkingDir: "$(workspaces.source.path)",
+								},
+							},
+						},
+					},
+				}
+			}
+
+			// 将每个创建的任务添加到 pipelineTasks 列表中
+			pipelineTasks = append(pipelineTasks, pipelineTask)
+
+			// 更新 previousTaskName，确保下一个任务依赖于当前任务
+			previousTaskName = task.Name
+		}
+	}
+
+	// 获取已有的 Pipeline
+	existingPipeline, err := clientSet.TektonV1().Pipelines(req.K8SNamespace).Get(context.Background(), req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing Pipeline: %v", err)
+	}
+
+	// 修改 Pipeline 的内容
+	existingPipeline.Spec.Tasks = pipelineTasks
+	existingPipeline.Spec.Workspaces = []tektonv1.PipelineWorkspaceDeclaration{
+		{
+			Name: "source",
+		},
+		{
+			Name: "maven-cache",
+		},
+	}
+	// 更新 Pipeline
+	_, err = clientSet.TektonV1().Pipelines(req.K8SNamespace).Update(context.Background(), existingPipeline, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update Pipeline: %v", err)
+	}
+
+	// 开始事务
+	tx := global.DYCLOUD_DB.Begin()
+	if tx.Error != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %v", tx.Error)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r) // 重新抛出以触发上层的错误处理
+		}
+	}()
+
+	// 获取并更新 Pipeline
+	var pipelines cicd.Pipelines
+	fmt.Println(req.ID)
+	if err := tx.Where("id = ?", req.ID).First(&pipelines).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to find Pipeline: %v", err)
+	}
+
+	// 更新 Pipeline 字段
+	pipelines.AppName = req.AppName
+	pipelines.EnvName = req.EnvName
+	pipelines.BuildScript = req.BuildScript
+	pipelines.K8SNamespace = req.K8SNamespace
+	pipelines.BaseImage = req.BaseImage
+	pipelines.DockerfilePath = req.DockerfilePath
+	pipelines.ImageName = req.ImageName
+	pipelines.ImageTag = req.ImageTag
+	pipelines.RegistryURL = req.RegistryURL
+	pipelines.RegistryUser = req.RegistryUser
+	pipelines.RegistryPass = req.RegistryPass
+	pipelines.GitUrl = req.GitUrl
+	pipelines.GitBranch = req.GitBranch
+	pipelines.GitCommitId = req.GitCommitId
+	pipelines.CreatedBy = req.CreatedBy
+	pipelines.CreatedName = req.CreatedName
+
+	if err := tx.Save(&pipelines).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to update Pipeline in database: %v", err)
+	}
+
+	fmt.Println(pipelines)
+	// 更新 Stages 和 Tasks
+	for _, stage := range req.Stages {
+		var existingStage cicd.Stage
+		fmt.Println(stage)
+		if err := tx.Where("pipeline_id = ? AND name = ?", pipelines.ID, stage.Name).First(&existingStage).Error; err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("failed to find Stage: %v", err)
+		}
+
+		for _, task := range stage.TaskList {
+			var existingTask cicd.Task
+			fmt.Println(task)
+			if err := tx.Where("stage_id = ? AND name = ?", existingStage.ID, task.Name).First(&existingTask).Error; err != nil {
+				tx.Rollback()
+				return nil, fmt.Errorf("failed to find Task: %v", err)
+			}
+
+			// Log task details for debugging
+			fmt.Printf("Updating Task - Stage ID: %d, Task Name: %s\n", existingStage.ID, task.Name)
+
+			// 更新 Task 字段
+			updatedTask := cicd.Task{
+				Branch:       task.Branch,
+				Image:        task.Image,
+				Plugin:       task.Plugin,
+				Script:       task.Script,
+				SpatialName:  task.SpatialName,
+				Warehouse:    task.Warehouse,
+				MirrorTag:    task.MirrorTag,
+				Dockerfile:   task.Dockerfile,
+				ContextPath:  task.ContextPath,
+				ProductName:  task.ProductName,
+				ProductPath:  task.ProductPath,
+				Version:      task.Version,
+				Resource:     task.Resource,
+				YamlResource: task.YamlResource,
+				GoalResource: task.GoalResource,
+				OpenScript:   task.OpenScript,
+			}
+
+			if err := tx.Model(&existingTask).Updates(updatedTask).Error; err != nil {
+				tx.Rollback()
+				return nil, fmt.Errorf("failed to update Task in database: %v", err)
+			}
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
 	return nil, nil
 }
 
