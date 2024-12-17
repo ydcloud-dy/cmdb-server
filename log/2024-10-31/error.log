@@ -1,2 +1,0 @@
-[DYCLOUD]2024-10-31 08:28:42.969	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
-[DYCLOUD]2024-10-31 08:34:57.136	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection

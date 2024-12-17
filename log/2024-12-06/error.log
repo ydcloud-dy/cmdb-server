@@ -1,8 +1,0 @@
-[DYCLOUD]2024-12-06 10:42:46.531	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:102	the server could not find the requested resource (get nodes.metrics.k8s.io)
-[DYCLOUD]2024-12-06 10:42:54.310	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/workload/pod/k8s_pod.go:99	the server could not find the requested resource (get pods.metrics.k8s.io)
-[DYCLOUD]2024-12-06 10:43:22.606	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/workload/pod/k8s_pod.go:99	the server could not find the requested resource (get pods.metrics.k8s.io)
-[DYCLOUD]2024-12-06 10:43:32.154	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/workload/pod/k8s_pod.go:99	the server could not find the requested resource (get pods.metrics.k8s.io)
-[DYCLOUD]2024-12-06 10:43:49.334	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/workload/pod/k8s_pod.go:99	the server could not find the requested resource (get pods.metrics.k8s.io)
-[DYCLOUD]2024-12-06 10:44:12.890	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/workload/pod/k8s_pod.go:99	the server could not find the requested resource (get pods.metrics.k8s.io)
-[DYCLOUD]2024-12-06 10:44:20.008	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/workload/pod/k8s_pod.go:99	the server could not find the requested resource (get pods.metrics.k8s.io)
-[DYCLOUD]2024-12-06 10:45:56.495	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/workload/pod/k8s_pod.go:99	the server could not find the requested resource (get pods.metrics.k8s.io)

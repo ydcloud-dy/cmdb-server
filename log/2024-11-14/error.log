@@ -1,1 +1,0 @@
-[DYCLOUD]2024-11-14 14:18:47.495	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:55	Get "https://192.168.31.40:6443/api/v1/nodes": dial tcp 192.168.31.40:6443: connect: connection refused

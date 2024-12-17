@@ -103,9 +103,10 @@ func (n *Notice) TableName() string {
 
 type Cache struct {
 	global.DYCLOUD_MODEL
-	PipelineID uint   `json:"pipeline_id" gorm:"column:pipeline_id;"`
-	Enable     int    `json:"enable" gorm:"column:enable"`
-	CacheDir   string `json:"cache_dir" gorm::"column:cache_dir"`
+	PipelineID  uint   `json:"pipeline_id" gorm:"column:pipeline_id;"`
+	Enable      int    `json:"enable" gorm:"column:enable"`
+	CacheOption string `json:"cache_option" gorm:"column:cache_option"`
+	CacheDir    string `json:"cache_dir" gorm::"column:cache_dir"`
 }
 
 func (n *Cache) TableName() string {
