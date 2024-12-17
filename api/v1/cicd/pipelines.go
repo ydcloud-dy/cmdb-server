@@ -284,3 +284,95 @@ func (PipelinesApi *PipelinesApi) DeletePipelinesByIds(c *gin.Context) {
 	}
 	response.OkWithData("删除成功", c)
 }
+
+func (PipelinesApi *PipelinesApi) GetPipelinesNotice(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	notice, err := PipelineService.GetPipelinesNotice(id)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData(notice, c)
+
+}
+func (PipelinesApi *PipelinesApi) ClosePipelineNotice(c *gin.Context) {
+	req := &request2.ClosePipelineNotice{}
+	pipelineID, _ := strconv.Atoi(c.Param("id"))
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	err = PipelineService.ClosePipelineNotice(req, pipelineID)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData("关闭通知成功", c)
+
+}
+func (PipelinesApi *PipelinesApi) CreatePipelineNotice(c *gin.Context) {
+	req := &cicd.Notice{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	err = PipelineService.CreatePipelinesNotice(req)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData("创建通知成功", c)
+
+}
+
+func (PipelinesApi *PipelinesApi) GetPipelinesCache(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	notice, err := PipelineService.GetPipelinesCache(id)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData(notice, c)
+
+}
+func (PipelinesApi *PipelinesApi) ClosePipelineCache(c *gin.Context) {
+	req := &request2.ClosePipelineCache{}
+	pipelineID, _ := strconv.Atoi(c.Param("id"))
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	err = PipelineService.ClosePipelineCache(req, pipelineID)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData("关闭缓存成功", c)
+
+}
+func (PipelinesApi *PipelinesApi) CreatePipelineCache(c *gin.Context) {
+	req := &cicd.Cache{}
+	err := c.ShouldBindJSON(req)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	err = PipelineService.CreatePipelinesCache(req)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	response.OkWithData("创建通知成功", c)
+
+}

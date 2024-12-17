@@ -18,6 +18,12 @@ func (s *PipelinesRouter) InitPipelinesRouter(Router *gin.RouterGroup, PublicRou
 		PipelinesRouter.GET("pipelines/:id", PipelineApi.DescribePipelines)
 		PipelinesRouter.DELETE("pipelines", PipelineApi.DeletePipelinesByIds)
 		PipelinesRouter.GET("pipelinesStatus", PipelineApi.GetPipelinesStatus)
+		PipelinesRouter.GET("pipelines/notice/:id", PipelineApi.GetPipelinesNotice)
+		PipelinesRouter.POST("pipelines/closeNotice/:id", PipelineApi.ClosePipelineNotice)
+		PipelinesRouter.POST("pipelines/notice", PipelineApi.CreatePipelineNotice)
+		PipelinesRouter.POST("pipelines/closeCache/:id", PipelineApi.ClosePipelineCache)
+		PipelinesRouter.POST("pipelines/cache", PipelineApi.CreatePipelineCache)
+		PipelinesRouter.GET("pipelines/cache/:id", PipelineApi.GetPipelinesCache)
 	}
 
 }

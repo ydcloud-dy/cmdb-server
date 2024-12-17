@@ -1,3 +1,11 @@
 [DYCLOUD]2024-12-13 09:35:31.249	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
 [DYCLOUD]2024-12-13 09:40:50.351	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
 [DYCLOUD]2024-12-13 10:19:49.403	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-13 11:09:36.552	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/kubernetes/deployments.go:63	get user info failed: record not found
+[DYCLOUD]2024-12-13 11:09:36.553	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:44	record not found
+[DYCLOUD]2024-12-13 11:09:40.958	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/kubernetes/deployments.go:63	get user info failed: record not found
+[DYCLOUD]2024-12-13 11:09:40.958	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:44	record not found
+[DYCLOUD]2024-12-13 11:09:46.092	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/kubernetes/deployments.go:63	get user info failed: record not found
+[DYCLOUD]2024-12-13 11:09:46.093	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/service/kubernetes/node/k8s_node.go:44	record not found
+[DYCLOUD]2024-12-13 15:30:02.578	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-13 15:31:59.680	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection

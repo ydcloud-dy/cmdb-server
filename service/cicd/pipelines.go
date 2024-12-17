@@ -60,6 +60,7 @@ func (e *PipelinesService) GetPipelinesList(req *request.PipelinesRequest) (envL
 	if err != nil {
 		return nil, 0, err
 	}
+	fmt.Println(data)
 	return &data, total, nil
 }
 func (e *PipelinesService) GetPipelinesStatus(client *tektonclient.Clientset, req *request.PipelinesRequest) (*request.PipelineRunStatus, error) {
@@ -121,6 +122,7 @@ func (e *PipelinesService) DescribePipelines(id int) (*cicd.Pipelines, error) {
 		First(&data).Error; err != nil {
 		return nil, err
 	}
+	fmt.Println(data)
 	return &data, nil
 }
 
@@ -544,6 +546,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 		EnvName:        req.EnvName,
 		BuildScript:    req.BuildScript,
 		K8SNamespace:   req.K8SNamespace,
+		K8SClusterName: req.K8SClusterName,
 		BaseImage:      req.BaseImage,
 		DockerfilePath: req.DockerfilePath,
 		ImageName:      req.ImageName,
@@ -1073,6 +1076,90 @@ func (e *PipelinesService) DeletePipelinesByIds(ids *request.DeleteApplicationBy
 	fmt.Println(ids)
 	if err := global.DYCLOUD_DB.Model(&cicd.Pipelines{}).Where("id in ?", ids.Ids).Delete(&cicd.Pipelines{}).Error; err != nil {
 		return err
+	}
+	return nil
+}
+
+func (e *PipelinesService) GetPipelinesNotice(id int) (*cicd.Notice, error) {
+	var result = cicd.Notice{}
+	fmt.Println(id)
+	if err := global.DYCLOUD_DB.Where("id = ?", id).First(&result).Error; err != nil {
+		return nil, err
+	}
+	fmt.Println(result)
+	return &result, nil
+}
+
+func (e *PipelinesService) ClosePipelineNotice(notice *request.ClosePipelineNotice, pipelineID int) error {
+	fmt.Println(notice)
+	fmt.Println(pipelineID)
+	if err := global.DYCLOUD_DB.Model(&cicd.Notice{}).Where("id = ?", pipelineID).Update("enable", notice.Enable).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *PipelinesService) CreatePipelinesNotice(req *cicd.Notice) error {
+	var notice cicd.Notice
+
+	// 查找是否已存在记录
+	result := global.DYCLOUD_DB.Where("pipeline_id = ?", req.PipelineID).First(&notice)
+
+	if result.RowsAffected == 0 {
+		// 如果不存在，创建新记录
+		if err := global.DYCLOUD_DB.Create(req).Error; err != nil {
+			return err
+		}
+	} else {
+		// 如果存在，更新记录
+		notice.Enable = req.Enable
+		notice.NoticeEvent = req.NoticeEvent
+		notice.Webhook = req.Webhook
+		notice.NoticeType = req.NoticeType
+		if err := global.DYCLOUD_DB.Model(&notice).Updates(notice).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *PipelinesService) GetPipelinesCache(id int) (*cicd.Cache, error) {
+	var result = cicd.Cache{}
+	fmt.Println(id)
+	if err := global.DYCLOUD_DB.Where("id = ?", id).First(&result).Error; err != nil {
+		return nil, err
+	}
+	fmt.Println(result)
+	return &result, nil
+}
+
+func (e *PipelinesService) ClosePipelineCache(notice *request.ClosePipelineCache, pipelineID int) error {
+	fmt.Println(notice)
+	fmt.Println(pipelineID)
+	if err := global.DYCLOUD_DB.Model(&cicd.Cache{}).Where("id = ?", pipelineID).Update("enable", notice.Enable).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *PipelinesService) CreatePipelinesCache(req *cicd.Cache) error {
+	var cache cicd.Cache
+
+	// 查找是否已存在记录
+	result := global.DYCLOUD_DB.Where("pipeline_id = ?", req.PipelineID).First(&cache)
+
+	if result.RowsAffected == 0 {
+		// 如果不存在，创建新记录
+		if err := global.DYCLOUD_DB.Create(req).Error; err != nil {
+			return err
+		}
+	} else {
+		// 如果存在，更新记录
+		cache.Enable = req.Enable
+		cache.CacheDir = req.CacheDir
+		if err := global.DYCLOUD_DB.Model(&cache).Updates(cache).Error; err != nil {
+			return err
+		}
 	}
 	return nil
 }

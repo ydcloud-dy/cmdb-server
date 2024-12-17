@@ -1,6 +1,10 @@
 package cicd
 
-import "DYCLOUD/global"
+import (
+	"DYCLOUD/global"
+	"database/sql/driver"
+	"encoding/json"
+)
 
 type Pipelines struct {
 	global.DYCLOUD_MODEL
@@ -21,6 +25,8 @@ type Pipelines struct {
 	GitBranch      string  `json:"git_branch" form:"git_branch"`
 	GitCommitId    string  `json:"git_commit_id" form:"git_commit_id"`
 	Stages         []Stage `json:"stages" gorm:"foreignKey:PipelineID"`
+	EnableCached   int     `json:"enable_cached" form:"enable_cached"`
+	CacheDir       string  `json:"cache_dir" form:"cache_dir"`
 	CreatedBy      uint    `gorm:"column:created_by;comment:创建者"`
 	CreatedName    string  `gorm:"column:created_name;comment:创建者名字"`
 	UpdatedName    string  `gorm:"column:updated_name;comment:修改者名字"`
@@ -80,4 +86,44 @@ type Task struct {
 
 func (t *Task) TableName() string {
 	return "cicd_pipelines_tasks"
+}
+
+type Notice struct {
+	global.DYCLOUD_MODEL
+	PipelineID  uint        `json:"pipeline_id" gorm:"column:pipeline_id;"`
+	Enable      int         `json:"enable" gorm:"column:enable"`
+	NoticeType  string      `json:"notice_type" gorm:"column:notice_type"`
+	NoticeEvent StringSlice `json:"notice_event" gorm:"type:json;serializer:json;column:notice_event"`
+	Webhook     string      `json:"webhook" gorm:"column:webhook"`
+}
+
+func (n *Notice) TableName() string {
+	return "cicd_pipelines_notices"
+}
+
+type Cache struct {
+	global.DYCLOUD_MODEL
+	PipelineID uint   `json:"pipeline_id" gorm:"column:pipeline_id;"`
+	Enable     int    `json:"enable" gorm:"column:enable"`
+	CacheDir   string `json:"cache_dir" gorm::"column:cache_dir"`
+}
+
+func (n *Cache) TableName() string {
+	return "cicd_pipelines_caches"
+}
+
+// StringSlice 用于处理 []string 的 JSON 序列化
+type StringSlice []string
+
+// 实现 GORM 的 Serializer 接口
+func (s StringSlice) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
+func (s *StringSlice) Scan(value interface{}) error {
+	if value == nil {
+		*s = []string{}
+		return nil
+	}
+	return json.Unmarshal(value.([]byte), s)
 }
