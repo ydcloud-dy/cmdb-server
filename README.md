@@ -1,4 +1,29 @@
-## server项目结构
+## 项目简介
+
+此项目是一个基于Go+Vue开发的Kubernetes多集群管理平台，平台还集成CMDB资产管理、容器平台、CICD功能等。
+<p align="center">
+  <a href="https://golang.google.cn/">
+    <img src="https://img.shields.io/badge/Golang-1.23-green.svg" alt="golang">
+  </a>
+  <a href="https://gin-gonic.com/">
+    <img src="https://img.shields.io/badge/Gin-1.9.1-red.svg" alt="gin">
+  </a>
+  <a href="https://gorm.io/">
+    <img src="https://img.shields.io/badge/Gorm-1.25.10-orange.svg" alt="gorm">
+  </a>
+  <a href="https://redis.io/">
+    <img src="https://img.shields.io/badge/redis-5.0-brightgreen.svg" alt="redis">
+  </a>
+  <a href="https://vuejs.org/">
+    <img src="https://img.shields.io/badge/Vue-3.0.0-orange.svg" alt="vue">
+  </a>
+  <a href="https://element-plus.org/zh-CN/">
+    <img src="https://img.shields.io/badge/Element%20Plus-%202.8.1-blue" alt="Element Plus">
+  </a>
+</p>
+
+> DYCLOUD运维平台， 本项目使用Go、 Gin、Gorm开发， 前端使用的是Vue3+Element Plus框架。
+
 
 ```shell
 ├── api
@@ -52,3 +77,7 @@
 | `--timer` | timer | 定时器接口封装 |
 | `--upload`      | oss                  | oss接口封装        |
 
+![img.png](image/img.png)
+![img_1.png](image/img_1.png)
+![img_2.png](image/img_2.png)
+![img_3.png](image/img_3.png)
