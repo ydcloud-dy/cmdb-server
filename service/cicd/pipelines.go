@@ -968,6 +968,8 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	}()
 
 	// 获取并更新 Pipeline
+	// 获取并更新 Pipeline
+	// 获取并更新 Pipeline
 	var pipelines *cicd.Pipelines
 	fmt.Println(req.ID)
 
@@ -995,13 +997,12 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	pipelines.GitCommitId = req.GitCommitId
 	pipelines.CreatedBy = req.CreatedBy
 	pipelines.CreatedName = req.CreatedName
-	fmt.Println("Updating Pipeline:", pipelines)
 
+	fmt.Println("Updating Pipeline:", pipelines)
 	if err := tx.Save(&pipelines).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to update Pipeline in database: %v", err)
 	}
-	fmt.Println("Pipeline updated successfully:", pipelines)
 
 	// 获取数据库中的所有 Stage
 	var existingStages []cicd.Stage
@@ -1010,119 +1011,141 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 		return nil, fmt.Errorf("failed to find Stages: %v", err)
 	}
 
-	// 创建一个 map 用于标记前端请求中的 Stage
-	stageNamesFromRequest := make(map[string]bool)
+	// 创建一个 map，用于标记前端请求中的 Stage
+	stageMapFromRequest := make(map[string]bool)
 	for _, stage := range req.Stages {
-		stageNamesFromRequest[stage.Name] = true
+		stageMapFromRequest[stage.Name] = true
 	}
 
-	// 处理 Stage 更新和删除
+	// 遍历数据库中的 Stages，检查是否需要删除
 	for _, existingStage := range existingStages {
-		// 如果这个 Stage 不在请求中，说明它被删除了
-		if _, exists := stageNamesFromRequest[existingStage.Name]; !exists {
-			// 删除这个 Stage
-			if err := tx.Where("id = ?", existingStage.ID).Delete(&cicd.Stage{}).Error; err != nil {
+		if _, exists := stageMapFromRequest[existingStage.Name]; !exists {
+			// 如果请求中没有这个 Stage，则删除它以及其关联的 Task 和 Param
+			fmt.Printf("Deleting Stage: %s (ID: %d)\n", existingStage.Name, existingStage.ID)
+
+			// 删除关联的 Task
+			if err := tx.Where("stage_id = ?", existingStage.ID).Delete(&cicd.Task{}).Error; err != nil {
 				tx.Rollback()
-				return nil, fmt.Errorf("failed to delete Stage from database: %v", err)
+				return nil, fmt.Errorf("failed to delete Tasks for Stage %s: %v", existingStage.Name, err)
 			}
-			fmt.Println("Deleted Stage:", existingStage.Name)
+
+			// 删除关联的 Param
+			if err := tx.Where("stage_id = ?", existingStage.ID).Delete(&cicd.Param{}).Error; err != nil {
+				tx.Rollback()
+				return nil, fmt.Errorf("failed to delete Params for Stage %s: %v", existingStage.Name, err)
+			}
+
+			// 删除 Stage 本身
+			if err := tx.Delete(&existingStage).Error; err != nil {
+				tx.Rollback()
+				return nil, fmt.Errorf("failed to delete Stage %s: %v", existingStage.Name, err)
+			}
 		}
 	}
 
 	// 处理请求中的每个 Stage
 	for _, stage := range req.Stages {
+		var currentStage *cicd.Stage
 		var existingStage cicd.Stage
-		fmt.Println("Received Stage:", stage)
 
-		// 查找数据库中的 Stage
-		if err := tx.Where("id = ?", stage.ID).First(&existingStage).Error; err != nil {
-			// 如果没有找到这个 Stage，说明是新增的，创建新的 Stage
-			if err := tx.Create(&cicd.Stage{
+		// 查找数据库中是否已有该 Stage
+		if err := tx.Where("pipeline_id = ? AND name = ?", pipelines.ID, stage.Name).First(&existingStage).Error; err != nil {
+			// 如果没有找到，则新增 Stage
+			newStage := cicd.Stage{
 				PipelineID: pipelines.ID,
 				Name:       stage.Name,
-			}).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("failed to create Stage in database: %v", err)
 			}
-
-			// 创建新的 Stage 后，重新获取其 ID
-			if err := tx.Where(" id = ?", stage.ID).First(&existingStage).Error; err != nil {
+			if err := tx.Create(&newStage).Error; err != nil {
 				tx.Rollback()
-				return nil, fmt.Errorf("failed to retrieve newly created Stage: %v", err)
+				return nil, fmt.Errorf("failed to create Stage: %v", err)
 			}
+			currentStage = &newStage
+		} else {
+			// 更新已有 Stage
+			existingStage.Name = stage.Name
+			if err := tx.Save(&existingStage).Error; err != nil {
+				tx.Rollback()
+				return nil, fmt.Errorf("failed to update Stage: %v", err)
+			}
+			currentStage = &existingStage
 		}
 
-		// 更新 Stage 数据
-		updatedStage := cicd.Stage{
-			Name: stage.Name, // 使用请求中传递的 name
-		}
-		fmt.Println("Updating Stage:", updatedStage)
-		if err := tx.Model(&existingStage).Where("id = ?", existingStage.ID).Updates(updatedStage).Error; err != nil {
+		// 获取数据库中的所有 Task
+		var existingTasks []cicd.Task
+		if err := tx.Where("stage_id = ?", currentStage.ID).Find(&existingTasks).Error; err != nil {
 			tx.Rollback()
-			return nil, fmt.Errorf("failed to update Stage in database: %v", err)
+			return nil, fmt.Errorf("failed to find Tasks: %v", err)
 		}
 
-		// 更新该 Stage 下的 Task 数据
+		// 创建一个 map，用于标记前端请求中的 Task
+		taskMapFromRequest := make(map[string]bool)
+		for _, task := range stage.TaskList {
+			taskMapFromRequest[task.Name] = true
+		}
+
+		// 删除多余的 Task
+		for _, existingTask := range existingTasks {
+			if _, exists := taskMapFromRequest[existingTask.Name]; !exists {
+				if err := tx.Delete(&existingTask).Error; err != nil {
+					tx.Rollback()
+					return nil, fmt.Errorf("failed to delete Task %s: %v", existingTask.Name, err)
+				}
+			}
+		}
+
+		// 更新或新增 Task
 		for _, task := range stage.TaskList {
 			var existingTask cicd.Task
-			fmt.Println("Current Task from DB:", task)
+			if err := tx.Where("stage_id = ? AND name = ?", currentStage.ID, task.Name).First(&existingTask).Error; err != nil {
+				// 如果 Task 不存在，则新增
+				newTask := cicd.Task{
+					StageID:      currentStage.ID,
+					Name:         task.Name,
+					Branch:       task.Branch,
+					Image:        task.Image,
+					Plugin:       task.Plugin,
+					Script:       task.Script,
+					SpatialName:  task.SpatialName,
+					Warehouse:    task.Warehouse,
+					MirrorTag:    task.MirrorTag,
+					Dockerfile:   task.Dockerfile,
+					ContextPath:  task.ContextPath,
+					ProductName:  task.ProductName,
+					ProductPath:  task.ProductPath,
+					Version:      task.Version,
+					Resource:     task.Resource,
+					YamlResource: task.YamlResource,
+					GoalResource: task.GoalResource,
+					OpenScript:   task.OpenScript,
+					PipelineID:   pipelines.ID,
+				}
+				if err := tx.Create(&newTask).Error; err != nil {
+					tx.Rollback()
+					return nil, fmt.Errorf("failed to create Task: %v", err)
+				}
+			} else {
+				// 如果存在，则更新
+				existingTask.Branch = task.Branch
+				existingTask.Image = task.Image
+				existingTask.Plugin = task.Plugin
+				existingTask.Script = task.Script
+				existingTask.SpatialName = task.SpatialName
+				existingTask.Warehouse = task.Warehouse
+				existingTask.MirrorTag = task.MirrorTag
+				existingTask.Dockerfile = task.Dockerfile
+				existingTask.ContextPath = task.ContextPath
+				existingTask.ProductName = task.ProductName
+				existingTask.ProductPath = task.ProductPath
+				existingTask.Version = task.Version
+				existingTask.Resource = task.Resource
+				existingTask.YamlResource = task.YamlResource
+				existingTask.GoalResource = task.GoalResource
+				existingTask.OpenScript = task.OpenScript
 
-			// 查找数据库中对应的 Task，使用 stage_id 和 task.name 来查找
-			if err := tx.Where("stage_id = ? AND id = ?", existingStage.ID, task.ID).First(&existingTask).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("failed to find Task: %v", err)
-			}
-
-			// 更新 Task 数据
-			updatedTask := cicd.Task{
-				Branch:       task.Branch,
-				Image:        task.Image,
-				Plugin:       task.Plugin,
-				Script:       task.Script,
-				SpatialName:  task.SpatialName,
-				Warehouse:    task.Warehouse,
-				MirrorTag:    task.MirrorTag,
-				Dockerfile:   task.Dockerfile,
-				ContextPath:  task.ContextPath,
-				ProductName:  task.ProductName,
-				ProductPath:  task.ProductPath,
-				Version:      task.Version,
-				Resource:     task.Resource,
-				YamlResource: task.YamlResource,
-				GoalResource: task.GoalResource,
-				OpenScript:   task.OpenScript,
-			}
-			fmt.Println("Updating Task:", updatedTask)
-
-			// 更新 Task 数据
-			if err := tx.Model(&existingTask).Where("id = ?", existingTask.ID).Updates(updatedTask).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("failed to update Task in database: %v", err)
-			}
-		}
-
-		// 更新该 Stage 下的 Param 数据
-		for _, param := range stage.Params {
-			var existingParam cicd.Param
-			fmt.Println("Current Param from DB:", param)
-
-			// 查找数据库中对应的 Param，使用 stage_id 和 param.name 来查找
-			if err := tx.Where("stage_id = ? AND name = ?", existingStage.ID, param.ID).First(&existingParam).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("failed to find Param: %v", err)
-			}
-
-			// 更新 Param 数据
-			updatedParam := cicd.Param{
-				Name:         param.Name,
-				DefaultValue: param.DefaultValue,
-			}
-			fmt.Println("Updating Param:", updatedParam)
-
-			// 更新 Param 数据
-			if err := tx.Model(&existingParam).Where("id = ?", existingParam.ID).Updates(updatedParam).Error; err != nil {
-				tx.Rollback()
-				return nil, fmt.Errorf("failed to update Param in database: %v", err)
+				if err := tx.Save(&existingTask).Error; err != nil {
+					tx.Rollback()
+					return nil, fmt.Errorf("failed to update Task: %v", err)
+				}
 			}
 		}
 	}
@@ -1134,6 +1157,7 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	fmt.Println("Transaction committed successfully")
 
 	return nil, nil
+
 }
 
 // DeletePipelines
