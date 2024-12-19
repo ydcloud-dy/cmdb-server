@@ -376,3 +376,50 @@ func (PipelinesApi *PipelinesApi) CreatePipelineCache(c *gin.Context) {
 	response.OkWithData("创建通知成功", c)
 
 }
+
+func (PipelinesApi *PipelinesApi) SyncBranches(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	fmt.Println(id)
+	//Applications.CreatedBy = utils.GetUserID(c)
+	//userId := utils.GetUserID(c)
+	err = PipelineService.SyncBranches(id)
+	if err != nil {
+		global.DYCLOUD_LOG.Error("执行失败!", zap.Error(err))
+		response.FailWithMessage("执行失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithData("同步成功", c)
+}
+func (PipelinesApi *PipelinesApi) GetBranchesList(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	var branches = request2.ApplicationRequest{}
+	err = c.BindQuery(&branches)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	branches.AppId = id
+
+	//Applications.CreatedBy = utils.GetUserID(c)
+	//userId := utils.GetUserID(c)
+	data, total, err := PipelineService.GetBranchesList(branches)
+	if err != nil {
+		global.DYCLOUD_LOG.Error("执行失败!", zap.Error(err))
+		response.FailWithMessage("执行失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithDetailed(response.PageResult{
+		List:     data,
+		Total:    total,
+		Page:     branches.Page,
+		PageSize: branches.PageSize,
+	}, "获取成功", c)
+}

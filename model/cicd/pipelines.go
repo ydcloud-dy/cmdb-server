@@ -21,6 +21,7 @@ type Pipelines struct {
 	RegistryURL    string  `json:"registry_url" form:"registry_url"`
 	RegistryUser   string  `json:"registry_user" form:"registry_user"`
 	RegistryPass   string  `json:"registry_pass" form:"registry_pass"`
+	RepoID         int     `json:"repo_id" form:"repo_id"`
 	GitUrl         string  `json:"git_url" form:"git_url"`
 	GitBranch      string  `json:"git_branch" form:"git_branch"`
 	GitCommitId    string  `json:"git_commit_id" form:"git_commit_id"`

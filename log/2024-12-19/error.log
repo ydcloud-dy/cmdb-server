@@ -1405,3 +1405,23 @@
 [DYCLOUD]2024-12-19 10:45:29.394	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
 [DYCLOUD]2024-12-19 10:49:19.846	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
 [DYCLOUD]2024-12-19 10:54:25.056	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 13:31:25.937	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/applications.go:93	执行失败!	{"error": "查询应用信息失败: record not found"}
+[DYCLOUD]2024-12-19 13:44:53.787	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/claims.go:48	重新写入cookie token失败,未能成功解析token,请检查请求头是否存在x-token且claims是否为规定结构
+[DYCLOUD]2024-12-19 13:56:59.702	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/configCenter/sourceCode.go:173	执行失败!	{"error": "record not found"}
+[DYCLOUD]2024-12-19 14:42:43.458	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:07:57.568	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:14:06.773	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:43:40.312	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:44:00.312	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/utils/claims.go:48	重新写入cookie token失败,未能成功解析token,请检查请求头是否存在x-token且claims是否为规定结构
+[DYCLOUD]2024-12-19 15:44:43.648	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:51:17.065	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:53:06.118	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:54:05.567	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/pipelines.go:391	执行失败!	{"error": "no matching project found for RepoID 57 and GitUrl https://gitee.com/dycloud5416/spring-boot-helloWorld.git"}
+[DYCLOUD]2024-12-19 15:54:05.575	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:55:01.328	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/pipelines.go:391	执行失败!	{"error": "no matching project found for RepoID 57 and GitUrl https://gitee.com/dycloud5416/spring-boot-helloWorld.git"}
+[DYCLOUD]2024-12-19 15:55:01.336	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:56:20.871	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/pipelines.go:391	执行失败!	{"error": "no matching project found for RepoID 57 and GitUrl https://gitee.com/dycloud5416/spring-boot-helloWorld.git"}
+[DYCLOUD]2024-12-19 15:57:00.924	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 15:59:53.468	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/api/v1/cicd/pipelines.go:391	执行失败!	{"error": "no matching project found for RepoID 57 and GitUrl https://gitee.com/dycloud5416/spring-boot-helloWorld.git"}
+[DYCLOUD]2024-12-19 16:18:31.783	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-19 16:23:14.528	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection

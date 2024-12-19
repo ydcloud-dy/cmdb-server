@@ -309,6 +309,7 @@ func (e *ApplicationsService) SyncBranches(id int) error {
 	//if err != nil {
 	//	return err
 	//}
+	//
 	//gitConfig := configCenter2.GitConfig{}
 	//json.Unmarshal(result.Config, &gitConfig)
 	//fmt.Println(result)
@@ -388,7 +389,7 @@ func (e *ApplicationsService) SyncBranches(id int) error {
 	//		e.SoftDeleteAppBranch(branchDBItem)
 	//	}
 	//}
-	//
+
 	return nil
 }
 func (e *ApplicationsService) SoftDeleteAppBranch(branch *cicd.AppBranch) error {

@@ -24,6 +24,9 @@ func (s *PipelinesRouter) InitPipelinesRouter(Router *gin.RouterGroup, PublicRou
 		PipelinesRouter.POST("pipelines/closeCache/:id", PipelineApi.ClosePipelineCache)
 		PipelinesRouter.POST("pipelines/cache", PipelineApi.CreatePipelineCache)
 		PipelinesRouter.GET("pipelines/cache/:id", PipelineApi.GetPipelinesCache)
+		PipelinesRouter.POST("pipelines/syncBranch/:id", PipelineApi.SyncBranches)
+		PipelinesRouter.GET("pipelines/:id/branches", PipelineApi.GetBranchesList)
+
 	}
 
 }

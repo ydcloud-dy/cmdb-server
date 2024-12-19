@@ -4,16 +4,22 @@ import (
 	"DYCLOUD/global"
 	"DYCLOUD/model/cicd"
 	request "DYCLOUD/model/cicd/request"
+	configCenter2 "DYCLOUD/model/configCenter"
+	"DYCLOUD/service/configCenter"
+	"DYCLOUD/service/configCenter/dao"
+	"encoding/json"
 	"fmt"
+	"github.com/drone/go-scm/scm"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"golang.org/x/net/context"
+	"gorm.io/gorm/utils"
 	corev1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
+	"strings"
 )
 
 type PipelinesService struct{}
@@ -555,6 +561,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 		RegistryUser:   req.RegistryUser,
 		RegistryPass:   req.RegistryPass,
 		GitUrl:         req.GitUrl,
+		RepoID:         req.RepoID,
 		GitBranch:      req.GitBranch,
 		GitCommitId:    req.GitCommitId,
 		CreatedBy:      req.CreatedBy,
@@ -997,7 +1004,7 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	pipelines.GitCommitId = req.GitCommitId
 	pipelines.CreatedBy = req.CreatedBy
 	pipelines.CreatedName = req.CreatedName
-
+	pipelines.RepoID = req.RepoID
 	fmt.Println("Updating Pipeline:", pipelines)
 	if err := tx.Save(&pipelines).Error; err != nil {
 		tx.Rollback()
@@ -1271,4 +1278,168 @@ func (e *PipelinesService) CreatePipelinesCache(req *cicd.Cache) error {
 		}
 	}
 	return nil
+}
+func (e *PipelinesService) SyncBranches(id int) error {
+	// 根据传入的应用id查询到应用详细信息
+	app, err := e.DescribePipelines(id)
+	if err != nil {
+		return err
+	}
+	// 构建代码源，然后通过上面获取的应用信息中的repo_id 查询到代码源详情
+	service := configCenter.SourceCodeService{}
+	result, err := service.DescribeSourceCode(app.RepoID)
+	if err != nil {
+		return err
+	}
+	resp, err := service.GetGitProjectsByRepoId(app.RepoID)
+	fmt.Println(resp)
+	gitConfig := configCenter2.GitConfig{}
+	json.Unmarshal(result.Config, &gitConfig)
+	fmt.Println(result)
+	fmt.Println(gitConfig)
+	fmt.Println(app.GitUrl)
+	// 查找匹配的项目
+	var fullName string
+	for _, repo := range resp {
+		fmt.Println(repo)
+		fmt.Println(app.RepoID)
+		fmt.Println(app.GitUrl)
+		// 检查 RepoID 和 GitUrl 是否匹配
+		if repo.RepoID == app.RepoID && repo.Path == app.GitUrl {
+			fullName = repo.FullName
+			break
+		}
+	}
+
+	// 如果没有找到匹配的项目，返回错误
+	if fullName == "" {
+		return fmt.Errorf("no matching project found for RepoID %d and GitUrl %s", app.RepoID, app.GitUrl)
+	}
+
+	// 打印找到的 full_name
+	fmt.Println("Found full_name:", fullName)
+
+	// 查找匹配的项目
+
+	// 打印找到的 full_name
+	// 创建 SCM 客户端，传入 SCM 类型（如 GitLab）、路径和访问 Token
+	client, err := dao.NewScmProvider(result.Type, app.GitUrl, gitConfig.Token)
+	// 用于存储从 SCM 获取的分支列表
+	branchList := []*scm.Reference{}
+	// 定义分页选项，初始页码为 1，页面大小为 100
+	listOptions := scm.ListOptions{
+		Page: 1,
+		Size: 100,
+	}
+	//// 获取 SCM 中指定应用的分支列表，返回第一页结果和分页信息
+	got, res, err := client.Git.ListBranches(context.Background(), fullName, listOptions)
+	if err != nil {
+		return err
+	}
+	// 将获取到的分支添加到 branchList 中
+	branchList = append(branchList, got...)
+	// 循环处理分页数据，继续获取剩余的分支列表
+	for i := 1; i < res.Page.Last; {
+		// 移动到下一页
+		listOptions.Page++
+		// 获取下一页的分支列表
+		got, _, err := client.Git.ListBranches(context.Background(), fullName, listOptions)
+		if err != nil {
+			return err
+		}
+		// 将获取到的分支添加到 branchList 中
+		branchList = append(branchList, got...)
+		// 增加页码计数
+		i++
+	}
+	// 遍历所有获取到的分支
+	for _, branch := range branchList {
+		// 如果分支名称以 "release_" 开头，跳过该分支
+		if strings.HasPrefix(branch.Name, "release_") {
+			continue
+		}
+		originBranch, err := e.GetAppBranchByName(id, branch.Name)
+		if err != nil {
+			if strings.Contains(err.Error(), "record not found") {
+				err = nil
+			} else {
+				return fmt.Errorf("when get app branch occur error: %s", err.Error())
+			}
+		}
+		if originBranch == nil {
+			appBranch := &cicd.AppBranch{
+				BranchName: branch.Name,
+				Path:       app.GitUrl,
+				AppID:      id,
+			}
+			if _, err := e.CreateAppBranchIfNotExist(appBranch); err != nil {
+				return err
+			}
+
+		} else {
+			originBranch.Path = app.GitUrl
+			if err := e.UpdateAppBranch(originBranch); err != nil {
+				return err
+			}
+		}
+
+	}
+	branchListInDB, err := e.GetAppBranches(id)
+	if err != nil {
+		return err
+	}
+	branchNameList := []string{}
+	for _, branch := range branchList {
+		branchNameList = append(branchNameList, branch.Name)
+	}
+	for _, branchDBItem := range branchListInDB {
+		if !utils.Contains(branchNameList, branchDBItem.BranchName) {
+			e.SoftDeleteAppBranch(branchDBItem)
+		}
+	}
+
+	return nil
+}
+func (e *PipelinesService) GetAppBranchByName(appID int, branchName string) (*cicd.AppBranch, error) {
+	branch := cicd.AppBranch{}
+	if err := global.DYCLOUD_DB.Where("app_id=?", appID).Where("branch_name=?", branchName).First(&branch).Error; err != nil {
+		return nil, err
+	}
+	return &branch, nil
+}
+func (e *PipelinesService) GetAppBranches(appID int) ([]*cicd.AppBranch, error) {
+	branches := []*cicd.AppBranch{}
+	query := global.DYCLOUD_DB.Model(&cicd.AppBranch{})
+	if appID != 0 {
+		query = query.Where("app_id = ?", appID)
+	}
+	err := query.Find(&branches).Error
+	return branches, err
+}
+
+func (e *PipelinesService) SoftDeleteAppBranch(branch *cicd.AppBranch) error {
+	err := global.DYCLOUD_DB.Model(&cicd.AppBranch{}).Where("id = ?", branch.ID).Delete(&cicd.AppBranch{}).Error
+
+	return err
+}
+func (e *PipelinesService) GetBranchesList(req request.ApplicationRequest) (envList *[]cicd.AppBranch, total int64, err error) {
+	limit := req.PageSize
+	offset := req.PageSize * (req.Page - 1)
+	db := global.DYCLOUD_DB.Model(&cicd.AppBranch{}).Where("app_id=?", req.AppId)
+
+	var data []cicd.AppBranch
+	err = db.Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	if limit != 0 {
+		db = db.Limit(limit).Offset(offset)
+	}
+
+	err = db.Find(&data).Error
+	if err != nil {
+		return nil, 0, nil
+	}
+	return &data, total, nil
 }
