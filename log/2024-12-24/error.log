@@ -1,0 +1,3 @@
+[DYCLOUD]2024-12-24 08:51:10.575	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/initialize/redis.go:31	redis connect ping failed, err:	{"name": "", "error": "dial tcp 127.0.0.1:6379: connect: connection refused"}
+[DYCLOUD]2024-12-24 08:55:18.399	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection
+[DYCLOUD]2024-12-24 08:57:25.002	[31merror[0m	/Users/dujie/Desktop/cmdb/持续更新/cmdb/server/core/server.go:41	accept tcp [::]:8888: use of closed network connection

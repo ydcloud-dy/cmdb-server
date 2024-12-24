@@ -13,6 +13,7 @@ import (
 	"DYCLOUD/service/kubernetes/configManager/poddistruptionbudget"
 	"DYCLOUD/service/kubernetes/configManager/resourceQuota"
 	"DYCLOUD/service/kubernetes/configManager/secret"
+	"DYCLOUD/service/kubernetes/metrics"
 	"DYCLOUD/service/kubernetes/namespace"
 	"DYCLOUD/service/kubernetes/network/Ingress"
 	"DYCLOUD/service/kubernetes/network/endpoint"
@@ -74,4 +75,5 @@ type ServiceGroup struct {
 	VeleroServiceGroup               velero.ServiceGroup
 	ConfigCenterServiceGroup         configCenter.ServiceGroup
 	CICDServiceGroup                 cicd.ServiceGroup
+	MetricsServiceGroup              metrics.ServiceGroup
 }

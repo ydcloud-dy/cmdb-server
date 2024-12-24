@@ -95,4 +95,8 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		cicd.InitApplicationsRouter(privateGroup, publicGroup)
 		cicd.InitPipelinesRouter(privateGroup, publicGroup)
 	}
+	{
+		metrics := router.RouterGroupApp.Metrics
+		metrics.InitMetricRouter(privateGroup)
+	}
 }

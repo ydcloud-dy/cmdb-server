@@ -13,6 +13,7 @@ import (
 	"DYCLOUD/router/kubernetes/configManager/poddistruptionbudget"
 	"DYCLOUD/router/kubernetes/configManager/resourceQuota"
 	"DYCLOUD/router/kubernetes/configManager/secret"
+	"DYCLOUD/router/kubernetes/metrics"
 	"DYCLOUD/router/kubernetes/namespaceManager/namespaces"
 	"DYCLOUD/router/kubernetes/network/Ingress"
 	"DYCLOUD/router/kubernetes/network/endpoint"
@@ -76,4 +77,5 @@ type RouterGroup struct {
 	Velero               velero.K8sVeleroTasksRouter
 	Environment          configCenter.RouterGroup
 	CICD                 cicd.RouterGroup
+	Metrics              metrics.RouterGroup
 }

@@ -13,6 +13,7 @@ import (
 	"DYCLOUD/api/v1/kubernetes/configManager/poddisruptionbudget"
 	"DYCLOUD/api/v1/kubernetes/configManager/resourceQuota"
 	"DYCLOUD/api/v1/kubernetes/configManager/secret"
+	"DYCLOUD/api/v1/kubernetes/metrics"
 	"DYCLOUD/api/v1/kubernetes/namespaceManager/namespaces"
 	"DYCLOUD/api/v1/kubernetes/networks/endpoint"
 	"DYCLOUD/api/v1/kubernetes/networks/ingress"
@@ -74,4 +75,5 @@ type ApiGroup struct {
 	RoleBinding         rolebindings.ApiGroup
 	ConfigCenter        configCenter.ApiGroup
 	CICD                cicd.ApiGroup
+	Metrics             metrics.ApiGroup
 }
