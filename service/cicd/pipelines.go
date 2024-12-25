@@ -146,6 +146,9 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 		Name: "clone-source",
 		TaskSpec: &tektonv1.EmbeddedTask{
 			TaskSpec: tektonv1.TaskSpec{
+				Params: []tektonv1.ParamSpec{
+					{Name: "git-branch", Type: tektonv1.ParamTypeString, Default: &tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: req.GitBranch}},
+				},
 				Steps: []tektonv1.Step{
 					{
 						Name:    "clone",
@@ -153,7 +156,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 						Command: []string{"/bin/sh"},
 						Args: []string{
 							"-c",
-							fmt.Sprintf("rm -rf $(workspaces.source.path)/* && git clone -b %s %s $(workspaces.source.path)", req.GitBranch, req.GitUrl),
+							fmt.Sprintf("rm -rf $(workspaces.source.path)/* && git clone -b $(params.git-branch) %s $(workspaces.source.path)", req.GitUrl),
 						},
 						WorkingDir: "$(workspaces.source.path)",
 					},
@@ -467,44 +470,8 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create RoleBinding: %v", err)
 	}
-	// 创建 PipelineRun
-	//pipelineRun := &tektonv1.PipelineRun{
-	//	ObjectMeta: metav1.ObjectMeta{
-	//		//GenerateName: fmt.Sprintf("%s-pipeline-", req.Name),
-	//		Name:      req.Name,
-	//		Namespace: req.K8SNamespace,
-	//	},
-	//	Spec: tektonv1.PipelineRunSpec{
-	//		TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
-	//			ServiceAccountName: "deploy-sa", // 使用新创建的 ServiceAccount
-	//
-	//		},
-	//		PipelineSpec: &tektonv1.PipelineSpec{
-	//			Tasks: pipelineTasks,
-	//		},
-	//		Workspaces: []tektonv1.WorkspaceBinding{
-	//			{
-	//				Name: "source",
-	//				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-	//					ClaimName: "shared-workspace-pvc", // 使用你已有的 PVC
-	//				},
-	//				SubPath: fmt.Sprintf("run-%s", metav1.Now().Format("20060102150405")),
-	//			},
-	//			{
-	//				Name: "maven-cache",
-	//				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-	//					ClaimName: "maven-cache-pvc", // 缓存 Maven 构建依赖的 PVC
-	//				},
-	//			},
-	//		},
-	//	},
-	//}
-	//
-	//// 创建 PipelineRun
-	//createdPipelineRun, err := clientSet.TektonV1().PipelineRuns(req.K8SNamespace).Create(context.Background(), pipelineRun, metav1.CreateOptions{})
-	//if err != nil {
-	//	return fmt.Errorf("failed to create PipelineRun: %v", err)
-	//}
+
+	fmt.Println(pipelineTasks)
 	// 创建 Pipeline 模板
 	pipeline := &tektonv1.Pipeline{
 		ObjectMeta: metav1.ObjectMeta{
@@ -634,6 +601,82 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
+
+	return nil
+}
+func (e *PipelinesService) RunPipelines(k8sClient *kubernetes.Clientset, clientSet *tektonclient.Clientset, req *cicd.Pipelines) error {
+
+	// 获取 Pipeline 信息
+	pipeline, err := clientSet.TektonV1().Pipelines(req.K8SNamespace).Get(context.Background(), req.Name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get Pipeline: %v", err)
+	}
+	fmt.Println(pipeline)
+	fmt.Println(req)
+	// 根据 pipeline 配置创建 PipelineRun 对象
+	pipelineRun := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name + "-run" + req.EnvName, // 使用流水线名称 + "-run" 作为 PipelineRun 名称
+			Namespace: req.K8SNamespace,
+		},
+		Spec: tektonv1.PipelineRunSpec{
+			PipelineRef: &tektonv1.PipelineRef{
+				Name: pipeline.Name, // 引用之前创建的 Pipeline
+			},
+			TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
+				ServiceAccountName: pipeline.Name, // 使用新创建的 ServiceAccount
+
+			},
+			Workspaces: []tektonv1.WorkspaceBinding{
+				{
+					Name: "source",
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: "shared-workspace-pvc", // 使用预先创建的 PVC
+					},
+					SubPath: fmt.Sprintf("%srun-%s", pipeline.Name, metav1.Now().Format("20060102150405")),
+				},
+				{
+					Name: "maven-cache",
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: "maven-cache-pvc", // 缓存用的 PVC
+					},
+				},
+			},
+			Params: []tektonv1.Param{
+				{
+					Name: "app-name",
+					Value: tektonv1.ParamValue{
+						Type:      tektonv1.ParamTypeString,
+						StringVal: req.AppName,
+					},
+				},
+				{
+					Name: "env-name",
+					Value: tektonv1.ParamValue{
+						Type:      tektonv1.ParamTypeString,
+						StringVal: req.EnvName,
+					},
+				},
+				// 新增分支参数
+				{
+					Name: "git-branch",
+					Value: tektonv1.ParamValue{
+						Type:      tektonv1.ParamTypeString,
+						StringVal: req.GitBranch, // 使用传入的分支信息
+					},
+				},
+			},
+		},
+	}
+
+	// 提交 PipelineRun
+	_, err = clientSet.TektonV1().PipelineRuns(req.K8SNamespace).Create(context.Background(), pipelineRun, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create PipelineRun: %v", err)
+	}
+
+	// 输出日志或其他信息
+	fmt.Printf("PipelineRun '%s' has been created successfully in namespace '%s'.\n", pipelineRun.Name, req.K8SNamespace)
 
 	return nil
 }
@@ -871,11 +914,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 									Name:  "update-yaml", // 更新 YAML 文件中的镜像信息
 									Image: "registry.cn-hangzhou.aliyuncs.com/dyclouds/alpine:latest",
 									Script: `
-										# 打印调试信息
-										echo "Original YAML Content:"
-										echo "$(params.yaml-content)"
-										echo "Built Image URL:"
-										echo "$(params.built-image-url)"
 							
 										# 写入原始 YAML 内容
 										printf "%s" "$(params.yaml-content)" > $(workspaces.source.path)/original-deployment.yaml

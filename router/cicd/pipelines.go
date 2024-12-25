@@ -13,6 +13,8 @@ func (s *PipelinesRouter) InitPipelinesRouter(Router *gin.RouterGroup, PublicRou
 	{
 		PipelinesRouter.GET("pipelines", PipelineApi.GetPipelinesList)
 		PipelinesRouter.POST("pipelines", PipelineApi.CreatePipelines)
+		PipelinesRouter.POST("pipelinesRun", PipelineApi.RunPipelines)
+
 		PipelinesRouter.PUT("pipelines", PipelineApi.UpdatePipelines)
 		PipelinesRouter.DELETE("pipelines/:id", PipelineApi.DeletePipelines)
 		PipelinesRouter.GET("pipelines/:id", PipelineApi.DescribePipelines)
