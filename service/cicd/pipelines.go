@@ -69,12 +69,22 @@ func (e *PipelinesService) GetPipelinesList(req *request.PipelinesRequest) (envL
 	fmt.Println(data)
 	return &data, total, nil
 }
+
+// GetPipelinesStatus
+//
+//	@Description: 获取应用详情页面pipeline状态
+//	@receiver e
+//	@param client
+//	@param req
+//	@return *request.PipelineRunStatus
+//	@return error
 func (e *PipelinesService) GetPipelinesStatus(client *tektonclient.Clientset, req *request.PipelinesRequest) (*request.PipelineRunStatus, error) {
 	var data *cicd.Pipelines
 	if err := global.DYCLOUD_DB.Where("app_name = ? and env_name = ?", req.AppCode, req.EnvCode).First(&data).Error; err != nil {
 		return nil, nil
 	}
-	pipelineRun, err := client.TektonV1().PipelineRuns(req.Namespace).Get(context.TODO(), data.Name, metav1.GetOptions{})
+	fmt.Println(data.Name)
+	pipelineRun, err := client.TektonV1().PipelineRuns(req.Namespace).Get(context.TODO(), fmt.Sprintf("%s-%s", data.Name, data.EnvName), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +144,7 @@ func (e *PipelinesService) DescribePipelines(id int) (*cicd.Pipelines, error) {
 
 // CreatePipelines
 //
-//	@Description: 创建应用
+//	@Description: 创建pipelines
 //	@receiver e
 //	@param req
 //	@return error
@@ -190,7 +200,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 									WorkingDir: "$(workspaces.source.path)",
 									VolumeMounts: []corev1.VolumeMount{
 										{
-											Name:      "maven-cache",
+											Name:      "cache",
 											MountPath: "/root/.m2", // 缓存 Maven 依赖，如果不是 Maven，也可以灵活替换路径
 										},
 									},
@@ -198,10 +208,10 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 							},
 							Volumes: []corev1.Volume{
 								{
-									Name: "maven-cache",
+									Name: "cache",
 									VolumeSource: corev1.VolumeSource{
 										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: "maven-cache-pvc", // 使用你创建的 PVC
+											ClaimName: req.Name + "-" + req.EnvName + "-" + "cache-pvc", // 缓存用的 PVC
 										},
 									},
 								},
@@ -487,7 +497,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 					Name: "source",
 				},
 				{
-					Name: "maven-cache",
+					Name: "cache",
 				},
 			},
 		},
@@ -604,6 +614,15 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 
 	return nil
 }
+
+// RunPipelines
+//
+//	@Description: 运行pipelinerun
+//	@receiver e
+//	@param k8sClient
+//	@param clientSet
+//	@param req
+//	@return error
 func (e *PipelinesService) RunPipelines(k8sClient *kubernetes.Clientset, clientSet *tektonclient.Clientset, req *cicd.Pipelines) error {
 
 	// 获取 Pipeline 信息
@@ -616,7 +635,7 @@ func (e *PipelinesService) RunPipelines(k8sClient *kubernetes.Clientset, clientS
 	// 根据 pipeline 配置创建 PipelineRun 对象
 	pipelineRun := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      req.Name + "-run" + req.EnvName, // 使用流水线名称 + "-run" 作为 PipelineRun 名称
+			Name:      req.Name + "-" + req.EnvName, // 使用流水线名称 + "-run" 作为 PipelineRun 名称
 			Namespace: req.K8SNamespace,
 		},
 		Spec: tektonv1.PipelineRunSpec{
@@ -631,14 +650,14 @@ func (e *PipelinesService) RunPipelines(k8sClient *kubernetes.Clientset, clientS
 				{
 					Name: "source",
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "shared-workspace-pvc", // 使用预先创建的 PVC
+						ClaimName: req.Name + "-" + req.EnvName + "-pvc", // 使用预先创建的 PVC
 					},
 					SubPath: fmt.Sprintf("%srun-%s", pipeline.Name, metav1.Now().Format("20060102150405")),
 				},
 				{
-					Name: "maven-cache",
+					Name: "cache",
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "maven-cache-pvc", // 缓存用的 PVC
+						ClaimName: req.Name + "-" + req.EnvName + "-" + "cache-pvc", // 缓存用的 PVC
 					},
 				},
 			},
@@ -699,6 +718,13 @@ func (e *PipelinesService) CreateAppBranchIfNotExist(branch *cicd.AppBranch) (in
 	return int(branch.ID), nil
 
 }
+
+// UpdateAppBranch
+//
+//	@Description: 修改应用分支
+//	@receiver e
+//	@param branch
+//	@return error
 func (e *PipelinesService) UpdateAppBranch(branch *cicd.AppBranch) error {
 	err := global.DYCLOUD_DB.Model(&cicd.AppBranch{}).Where("id = ?", branch.ID).Updates(branch).Error
 	return err
@@ -760,7 +786,7 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 									WorkingDir: "$(workspaces.source.path)",
 									VolumeMounts: []corev1.VolumeMount{
 										{
-											Name:      "maven-cache",
+											Name:      "cache",
 											MountPath: "/root/.m2", // 缓存 Maven 依赖，如果不是 Maven，也可以灵活替换路径
 										},
 									},
@@ -768,10 +794,10 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 							},
 							Volumes: []corev1.Volume{
 								{
-									Name: "maven-cache",
+									Name: "cache",
 									VolumeSource: corev1.VolumeSource{
 										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-											ClaimName: "maven-cache-pvc", // 使用你创建的 PVC
+											ClaimName: req.Name + "-" + req.EnvName + "-" + "cache-pvc", // 缓存用的 PVC
 										},
 									},
 								},
@@ -990,7 +1016,7 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 			Name: "source",
 		},
 		{
-			Name: "maven-cache",
+			Name: "cache",
 		},
 	}
 	// 更新 Pipeline
@@ -1233,6 +1259,13 @@ func (e *PipelinesService) DeletePipelinesByIds(ids *request.DeleteApplicationBy
 	return nil
 }
 
+// GetPipelinesNotice
+//
+//	@Description: 获取pipeline通知详情
+//	@receiver e
+//	@param id
+//	@return *cicd.Notice
+//	@return error
 func (e *PipelinesService) GetPipelinesNotice(id int) (*cicd.Notice, error) {
 	var result = cicd.Notice{}
 	fmt.Println(id)
@@ -1243,6 +1276,13 @@ func (e *PipelinesService) GetPipelinesNotice(id int) (*cicd.Notice, error) {
 	return &result, nil
 }
 
+// ClosePipelineNotice
+//
+//	@Description: 关闭流水线运行通知
+//	@receiver e
+//	@param notice
+//	@param pipelineID
+//	@return error
 func (e *PipelinesService) ClosePipelineNotice(notice *request.ClosePipelineNotice, pipelineID int) error {
 	fmt.Println(notice)
 	fmt.Println(pipelineID)
@@ -1252,6 +1292,12 @@ func (e *PipelinesService) ClosePipelineNotice(notice *request.ClosePipelineNoti
 	return nil
 }
 
+// CreatePipelinesNotice
+//
+//	@Description: 创建pipeline运行通知
+//	@receiver e
+//	@param req
+//	@return error
 func (e *PipelinesService) CreatePipelinesNotice(req *cicd.Notice) error {
 	var notice cicd.Notice
 
@@ -1276,6 +1322,13 @@ func (e *PipelinesService) CreatePipelinesNotice(req *cicd.Notice) error {
 	return nil
 }
 
+// GetPipelinesCache
+//
+//	@Description: 获取pipeline缓存
+//	@receiver e
+//	@param id
+//	@return *cicd.Cache
+//	@return error
 func (e *PipelinesService) GetPipelinesCache(id int) (*cicd.Cache, error) {
 	var result = cicd.Cache{}
 	fmt.Println(id)
@@ -1286,6 +1339,13 @@ func (e *PipelinesService) GetPipelinesCache(id int) (*cicd.Cache, error) {
 	return &result, nil
 }
 
+// ClosePipelineCache
+//
+//	@Description: 关闭pieline缓存
+//	@receiver e
+//	@param notice
+//	@param pipelineID
+//	@return error
 func (e *PipelinesService) ClosePipelineCache(notice *request.ClosePipelineCache, pipelineID int) error {
 	fmt.Println(notice)
 	fmt.Println(pipelineID)
@@ -1295,6 +1355,12 @@ func (e *PipelinesService) ClosePipelineCache(notice *request.ClosePipelineCache
 	return nil
 }
 
+// CreatePipelinesCache
+//
+//	@Description: 创建pipeline缓存
+//	@receiver e
+//	@param req
+//	@return error
 func (e *PipelinesService) CreatePipelinesCache(req *cicd.Cache) error {
 	var cache cicd.Cache
 
@@ -1317,6 +1383,13 @@ func (e *PipelinesService) CreatePipelinesCache(req *cicd.Cache) error {
 	}
 	return nil
 }
+
+// SyncBranches
+//
+//	@Description: 同步分支
+//	@receiver e
+//	@param id
+//	@return error
 func (e *PipelinesService) SyncBranches(id int) error {
 	// 根据传入的应用id查询到应用详细信息
 	app, err := e.DescribePipelines(id)
@@ -1438,6 +1511,15 @@ func (e *PipelinesService) SyncBranches(id int) error {
 
 	return nil
 }
+
+// GetAppBranchByName
+//
+//	@Description: 根据分支名和应用id查询分支详情
+//	@receiver e
+//	@param appID
+//	@param branchName
+//	@return *cicd.AppBranch
+//	@return error
 func (e *PipelinesService) GetAppBranchByName(appID int, branchName string) (*cicd.AppBranch, error) {
 	branch := cicd.AppBranch{}
 	if err := global.DYCLOUD_DB.Where("app_id=?", appID).Where("branch_name=?", branchName).First(&branch).Error; err != nil {
@@ -1445,6 +1527,14 @@ func (e *PipelinesService) GetAppBranchByName(appID int, branchName string) (*ci
 	}
 	return &branch, nil
 }
+
+// GetAppBranches
+//
+//	@Description: 获取应用列表列表
+//	@receiver e
+//	@param appID
+//	@return []*cicd.AppBranch
+//	@return error
 func (e *PipelinesService) GetAppBranches(appID int) ([]*cicd.AppBranch, error) {
 	branches := []*cicd.AppBranch{}
 	query := global.DYCLOUD_DB.Model(&cicd.AppBranch{})
@@ -1460,9 +1550,18 @@ func (e *PipelinesService) SoftDeleteAppBranch(branch *cicd.AppBranch) error {
 
 	return err
 }
+
+// GetBranchesList
+//
+//	@Description: 获取分支列表
+//	@receiver e
+//	@param req
+//	@return envList
+//	@return total
+//	@return err
 func (e *PipelinesService) GetBranchesList(req request.ApplicationRequest) (envList *[]cicd.AppBranch, total int64, err error) {
-	limit := req.PageSize
-	offset := req.PageSize * (req.Page - 1)
+	//limit := req.PageSize
+	//offset := req.PageSize * (req.Page - 1)
 	db := global.DYCLOUD_DB.Model(&cicd.AppBranch{}).Where("app_id=?", req.AppId)
 
 	var data []cicd.AppBranch
@@ -1471,9 +1570,9 @@ func (e *PipelinesService) GetBranchesList(req request.ApplicationRequest) (envL
 		return
 	}
 
-	if limit != 0 {
-		db = db.Limit(limit).Offset(offset)
-	}
+	//if limit != 0 {
+	//	db = db.Limit(limit).Offset(offset)
+	//}
 
 	err = db.Find(&data).Error
 	if err != nil {
