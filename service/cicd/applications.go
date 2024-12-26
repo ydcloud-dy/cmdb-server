@@ -608,7 +608,6 @@ func (e *ApplicationsService) DeleteApplications(id int) error {
 //	@param ids
 //	@return error
 func (e *ApplicationsService) DeleteApplicationsByIds(ids *request.DeleteApplicationByIds) error {
-	fmt.Println(ids)
 	if err := global.DYCLOUD_DB.Model(&cicd.Applications{}).Where("id in ?", ids.Ids).Delete(&cicd.Applications{}).Error; err != nil {
 		return err
 	}
@@ -616,7 +615,6 @@ func (e *ApplicationsService) DeleteApplicationsByIds(ids *request.DeleteApplica
 }
 
 func (e *ApplicationsService) GetApplicationDeploymentInfo(req *request.DeploymentInfoRequest) (*[]corev1.Pod, int, error) {
-	fmt.Println(req)
 	service := pod.K8sPodService{}
 	podList, total, err := service.GetPodList(pods.PodListReq{
 		ClusterId:     req.ClusterId,
@@ -630,7 +628,6 @@ func (e *ApplicationsService) GetApplicationDeploymentInfo(req *request.Deployme
 	if err != nil {
 		return nil, 0, err
 	}
-	fmt.Println(podList)
-	fmt.Println(total)
+
 	return podList, total, nil
 }

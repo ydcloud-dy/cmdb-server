@@ -6,7 +6,6 @@ import (
 	cmdbReq "DYCLOUD/model/cmdb/request"
 	"DYCLOUD/model/common/response"
 	"DYCLOUD/utils"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"strconv"
@@ -148,7 +147,6 @@ func (cmdbHostsApi *CmdbHostsApi) UpdateCmdbHosts(c *gin.Context) {
 // @Router /cmdbHosts/findCmdbHosts [get]
 func (cmdbHostsApi *CmdbHostsApi) FindCmdbHosts(c *gin.Context) {
 	ID := c.Query("id")
-	fmt.Println(ID)
 	recmdbHosts, err := cmdbHostsService.GetCmdbHosts(ID)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("查询失败!", zap.Error(err))

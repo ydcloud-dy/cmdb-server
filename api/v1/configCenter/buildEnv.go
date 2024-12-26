@@ -6,7 +6,6 @@ import (
 	"DYCLOUD/model/configCenter"
 	"DYCLOUD/model/configCenter/request"
 	"DYCLOUD/utils"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"strconv"
@@ -26,7 +25,6 @@ func (BuildEnvApi *BuildEnvApi) GetBuildEnvList(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(env)
 	//BuildEnv.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, total, err := BuildEnvService.GetBuildEnvList(&env)
@@ -54,7 +52,6 @@ func (BuildEnvApi *BuildEnvApi) DescribeBuildEnv(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//BuildEnv.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, err := BuildEnvService.DescribeBuildEnv(id)
@@ -78,7 +75,6 @@ func (BuildEnvApi *BuildEnvApi) CreateBuildEnv(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request)
 	request.CreatedBy = utils.GetUserID(c)
 	request.CreatedName = utils.GetUserName(c)
 	//userId := utils.GetUserID(c)
@@ -102,7 +98,6 @@ func (BuildEnvApi *BuildEnvApi) UpdateBuildEnv(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request, "================================")
 	request.UpdatedBy = utils.GetUserID(c)
 	request.UpdatedName = utils.GetUserName(c)
 	data, err := BuildEnvService.UpdateBuildEnv(request)
@@ -124,7 +119,6 @@ func (BuildEnvApi *BuildEnvApi) DeleteBuildEnv(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	err = BuildEnvService.DeleteBuildEnv(id)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -145,7 +139,6 @@ func (BuildEnvApi *BuildEnvApi) DeleteBuildEnvByIds(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(ids)
 	err = BuildEnvService.DeleteBuildEnvByIds(ids)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

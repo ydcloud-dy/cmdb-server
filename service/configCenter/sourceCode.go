@@ -63,7 +63,6 @@ func (s *SourceCodeService) CreateSourceCode(req *configCenter.ServiceIntegratio
 	}
 
 	req.CryptoConfig(config)
-	fmt.Println(req)
 	if err := global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{}).Create(&req).Error; err != nil {
 		return err
 	}
@@ -77,7 +76,6 @@ func (s *SourceCodeService) CreateSourceCode(req *configCenter.ServiceIntegratio
 //	@param req
 //	@return error
 func (s *SourceCodeService) UpdateSourceCode(req *configCenter.ServiceIntegration) error {
-	fmt.Println(req)
 	data, err := s.DescribeSourceCode(int(req.ID))
 	if err != nil {
 		return err
@@ -101,7 +99,6 @@ func (s *SourceCodeService) UpdateSourceCode(req *configCenter.ServiceIntegratio
 //	@param id
 //	@return error
 func (s *SourceCodeService) DeleteSourceCode(id int) error {
-	fmt.Println(id)
 
 	if err := global.DYCLOUD_DB.Where("id = ?", id).Delete(&configCenter.ServiceIntegration{}).Error; err != nil {
 		return err
@@ -117,7 +114,6 @@ func (s *SourceCodeService) DeleteSourceCode(id int) error {
 //	@return *configCenter.ServiceIntegration
 //	@return error
 func (s *SourceCodeService) DescribeSourceCode(id int) (*configCenter.ServiceIntegration, error) {
-	fmt.Println(id)
 	var data configCenter.ServiceIntegration
 	if err := global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{}).Where("id = ? and type not in (0,1,2)", id).First(&data).Error; err != nil {
 		return nil, err
@@ -134,7 +130,6 @@ func (s *SourceCodeService) DescribeSourceCode(id int) (*configCenter.ServiceInt
 //	@return string
 //	@return error
 func (s *SourceCodeService) VerifySourceCode(req *configCenter.ServiceIntegration) (string, error) {
-	fmt.Println(req)
 	gitConf := &configCenter.GitConfig{}
 	err := json.Unmarshal([]byte(req.Config), gitConf)
 	if err != nil {
@@ -189,9 +184,7 @@ func (s *SourceCodeService) GetGitProjectsByRepoId(id int) ([]*configCenter.Repo
 	if err != nil {
 		return nil, fmt.Errorf("scmclient get repositories list error: %s", err.Error())
 	}
-	fmt.Println(got)
-	fmt.Println(rsp)
-	fmt.Println("================================================================")
+
 	// 将第一页的仓库列表添加到repoList
 	repoList = append(repoList, got...)
 	// 遍历剩余的页面，从第二页到最后一页
@@ -207,7 +200,6 @@ func (s *SourceCodeService) GetGitProjectsByRepoId(id int) ([]*configCenter.Repo
 		repoList = append(repoList, got...)
 		i++ // 更新计数器
 	}
-	fmt.Println(repoList)
 	// 创建响应结构体，存储返回数据
 	newRsp := []*configCenter.RepoProjectRsp{}
 	// 遍历每一个仓库，将信息转换为自定义结构
@@ -220,6 +212,5 @@ func (s *SourceCodeService) GetGitProjectsByRepoId(id int) ([]*configCenter.Repo
 		}
 		newRsp = append(newRsp, newItem)
 	}
-	fmt.Println(newRsp)
 	return newRsp, nil
 }

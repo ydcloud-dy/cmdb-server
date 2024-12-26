@@ -127,7 +127,6 @@ func (m MetricsService) GetMetrics(mt metrics.MetricsQuery) (t map[string]*metri
 			promql := url.QueryEscape(prometheusQueries.GetValueByField(fName))
 			global.DYCLOUD_LOG.Info(fmt.Sprintf("promql: %s ", prometheusQueries.GetValueByField(fName)))
 			fullpromql := fmt.Sprintf("%s/api/v1/query_range?query=%s&start=%d&end=%d&step=%d", prometheusUrl, promql, start, end, step)
-			fmt.Println(fullpromql)
 			resp, err := httpClient.Get(fullpromql)
 			if err != nil {
 				global.DYCLOUD_LOG.Error("request metrics data failed", zap.Any("err", err))

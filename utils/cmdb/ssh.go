@@ -54,7 +54,6 @@ func GenerateSSHKey(privateKeyPath string) error {
 		return fmt.Errorf("unable to write public key: %v", err)
 	}
 
-	fmt.Printf("SSH key generated successfully.\nPrivate key: %s\nPublic key: %s\n", privateKeyPath, publicKeyPath)
 	return nil
 }
 
@@ -208,7 +207,6 @@ func PopulateHostInfo(client *ssh.Client, host *cmdb.CmdbHosts) error {
 		}
 	}
 	host.DiskInfo = strings.Join(diskInfoList, ",")
-	fmt.Println(host.DiskInfo)
 	return nil
 }
 

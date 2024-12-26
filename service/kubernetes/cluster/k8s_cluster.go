@@ -127,7 +127,6 @@ func (k8sClusterService *K8sClusterService) UpdateK8sCluster(k8sCluster cluster2
 // @return k8sCluster
 // @return err
 func (k8sClusterService *K8sClusterService) GetK8sCluster(id int) (k8sCluster cluster2.K8sCluster, err error) {
-	fmt.Println(id)
 	err = global.DYCLOUD_DB.Where("id = ?", id).Preload("Users").First(&k8sCluster).Error
 	return
 }

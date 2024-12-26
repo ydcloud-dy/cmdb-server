@@ -53,7 +53,6 @@ func (e *EnvironmentService) GetEnvironmentList(req *request.EnvRequest) (envLis
 //	@return envList
 //	@return err
 func (e *EnvironmentService) DescribeEnvironment(id int) (envList *configCenter.Environment, err error) {
-	fmt.Println(id)
 	var data *configCenter.Environment
 	if err := global.DYCLOUD_DB.Where("id = ?", id).Find(&data).Error; err != nil {
 		return nil, err
@@ -68,7 +67,6 @@ func (e *EnvironmentService) DescribeEnvironment(id int) (envList *configCenter.
 //	@param req
 //	@return error
 func (e *EnvironmentService) CreateEnvironment(req *configCenter.Environment) error {
-	fmt.Println(req)
 	var existingEnv configCenter.Environment
 	// 检查是否存在相同的 name
 	if err := global.DYCLOUD_DB.Where("name = ?", req.Name).First(&existingEnv).Error; err == nil {
@@ -93,7 +91,6 @@ func (e *EnvironmentService) CreateEnvironment(req *configCenter.Environment) er
 //	@return data
 //	@return err
 func (e *EnvironmentService) UpdateEnvironment(req *configCenter.Environment) (data *configCenter.Environment, err error) {
-	fmt.Println(req)
 	if err = global.DYCLOUD_DB.Model(&configCenter.Environment{}).Where("id = ?", req.ID).Omit("ID").Updates(&req).Error; err != nil {
 		return nil, err
 	}
@@ -107,7 +104,6 @@ func (e *EnvironmentService) UpdateEnvironment(req *configCenter.Environment) (d
 //	@param id
 //	@return error
 func (e *EnvironmentService) DeleteEnvironment(id int) error {
-	fmt.Println(id)
 	if err := global.DYCLOUD_DB.Model(&configCenter.Environment{}).Where("id = ?", id).Delete(&configCenter.Environment{}).Error; err != nil {
 		return err
 	}
@@ -121,7 +117,6 @@ func (e *EnvironmentService) DeleteEnvironment(id int) error {
 //	@param ids
 //	@return error
 func (e *EnvironmentService) DeleteEnvironmentByIds(ids *request.DeleteEnvByIds) error {
-	fmt.Println(ids)
 	if err := global.DYCLOUD_DB.Model(&configCenter.Environment{}).Where("id in ?", ids.Ids).Delete(&configCenter.Environment{}).Error; err != nil {
 		return err
 	}

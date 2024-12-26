@@ -121,7 +121,6 @@ func (s *ServiceIntegrationService) CreateServiceIntegration(req *configCenter.S
 //	@param req
 //	@return error
 func (s *ServiceIntegrationService) UpdateServiceIntegration(req *configCenter.ServiceIntegration) error {
-	fmt.Println(req)
 	data, err := s.DescribeServiceIntegration(int(req.ID))
 	if err != nil {
 		return err
@@ -145,7 +144,6 @@ func (s *ServiceIntegrationService) UpdateServiceIntegration(req *configCenter.S
 //	@param id
 //	@return error
 func (s *ServiceIntegrationService) DeleteServiceIntegration(id int) error {
-	fmt.Println(id)
 
 	if err := global.DYCLOUD_DB.Where("id = ?", id).Delete(&configCenter.ServiceIntegration{}).Error; err != nil {
 		return err
@@ -161,7 +159,6 @@ func (s *ServiceIntegrationService) DeleteServiceIntegration(id int) error {
 //	@return *configCenter.ServiceIntegration
 //	@return error
 func (s *ServiceIntegrationService) DescribeServiceIntegration(id int) (*configCenter.ServiceIntegration, error) {
-	fmt.Println(id)
 	var data configCenter.ServiceIntegration
 	if err := global.DYCLOUD_DB.Model(&configCenter.ServiceIntegration{}).Where("id = ? and type != 3", id).First(&data).Error; err != nil {
 		return nil, err
@@ -178,7 +175,6 @@ func (s *ServiceIntegrationService) DescribeServiceIntegration(id int) (*configC
 //	@return string
 //	@return error
 func (s *ServiceIntegrationService) VerifyServiceIntegration(req *configCenter.ServiceIntegration) (string, error) {
-	fmt.Println(req)
 	switch req.Type {
 	case configCenter.KUBERNETES_TYPE:
 		kube := &configCenter.KubernetesConfig{}

@@ -8,7 +8,6 @@ import (
 	"DYCLOUD/model/common/response"
 	"DYCLOUD/model/kubernetes/pods"
 	"DYCLOUD/utils"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"strconv"
@@ -28,7 +27,6 @@ func (ApplicationsApi *ApplicationsApi) GetApplicationsList(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(env)
 	//Applications.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, total, err := ApplicationService.GetApplicationsList(env)
@@ -85,7 +83,6 @@ func (ApplicationsApi *ApplicationsApi) DescribeApplications(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//Applications.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, err := ApplicationService.DescribeApplications(id)
@@ -99,7 +96,6 @@ func (ApplicationsApi *ApplicationsApi) DescribeApplications(c *gin.Context) {
 func (ApplicationsApi *ApplicationsApi) DescribeApplicationsByName(c *gin.Context) {
 	name := c.Query("app_code")
 
-	fmt.Println(name)
 	//Applications.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, err := ApplicationService.DescribeApplicationsByName(name)
@@ -124,7 +120,6 @@ func (ApplicationsApi *ApplicationsApi) CreateApplications(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request)
 	request.App.CreatedBy = utils.GetUserID(c)
 	request.App.CreatedName = utils.GetUserName(c)
 	//userId := utils.GetUserID(c)
@@ -141,7 +136,6 @@ func (ApplicationsApi *ApplicationsApi) SyncBranches(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//Applications.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	err = ApplicationService.SyncBranches(id)
@@ -165,7 +159,6 @@ func (ApplicationsApi *ApplicationsApi) UpdateApplications(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request, "================================")
 	request.App.UpdatedBy = utils.GetUserID(c)
 	request.App.UpdatedName = utils.GetUserName(c)
 	data, err := ApplicationService.UpdateApplications(request)
@@ -187,7 +180,6 @@ func (ApplicationsApi *ApplicationsApi) DeleteApplications(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	err = ApplicationService.DeleteApplications(id)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -208,7 +200,6 @@ func (ApplicationsApi *ApplicationsApi) DeleteApplicationsByIds(c *gin.Context) 
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(ids)
 	err = ApplicationService.DeleteApplicationsByIds(ids)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

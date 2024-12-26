@@ -141,7 +141,6 @@ func (t *NodeTTYService) Get(nodetty kubernetesReq.NodeTTY, uuid uuid.UUID) (pod
 	// 获取集群信息
 	cluster, err := clusterService.GetK8sCluster(nodetty.ClusterId)
 	if err != nil {
-		fmt.Println(err.Error())
 		global.DYCLOUD_LOG.Error("get cluster info failed: " + err.Error())
 		return podMsg, err
 	}

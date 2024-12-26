@@ -126,8 +126,6 @@ func (s *ServiceIntegration) DecryptConfig() error {
 		return err
 	}
 	s.Config = json.RawMessage(decrypted)
-	fmt.Println("解密后的config", string(s.Config))
-	fmt.Println("================================================")
 
 	return nil
 }

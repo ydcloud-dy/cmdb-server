@@ -6,7 +6,6 @@ import (
 	"DYCLOUD/model/configCenter"
 	"DYCLOUD/model/configCenter/request"
 	"DYCLOUD/utils"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"strconv"
@@ -55,7 +54,6 @@ func (s *SourceCodeApi) CreateSourceCode(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request)
 	request.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	err = SourceCodeService.CreateSourceCode(request)
@@ -78,7 +76,6 @@ func (s *SourceCodeApi) UpdateSourceCode(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request, "================================")
 	request.UpdatedBy = utils.GetUserID(c)
 	err = SourceCodeService.UpdateSourceCode(request)
 	if err != nil {
@@ -99,7 +96,6 @@ func (s *SourceCodeApi) DeleteSourceCode(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	err = SourceCodeService.DeleteSourceCode(id)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -119,7 +115,6 @@ func (s *SourceCodeApi) DescribeSourceCode(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//Environment.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, err := SourceCodeService.DescribeSourceCode(id)
@@ -143,7 +138,6 @@ func (s *SourceCodeApi) VerifySourceCode(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request)
 	request.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	msg, err := SourceCodeService.VerifySourceCode(request)
@@ -165,7 +159,6 @@ func (s *SourceCodeApi) GetGitProjectsByRepoId(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//Environment.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, err := SourceCodeService.GetGitProjectsByRepoId(id)

@@ -7,7 +7,6 @@ import (
 	"DYCLOUD/utils/kubernetes/paginate"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gofrs/uuid/v5"
 	v1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroclientset "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
@@ -31,7 +30,6 @@ type K8sVeleroRestoresService struct {
 func (k8sVeleroRestoresService *K8sVeleroRestoresService) GetK8sVeleroRestoreList(
 	req veleroReq.K8sVeleroRestoresSearchReq, uuid uuid.UUID) (list *[]v1.Restore, total int, err error) {
 
-	fmt.Print(req)
 	kubernetes, err := k8sVeleroRestoresService.Generic(&req, uuid)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("获取失败:" + err.Error())
@@ -109,7 +107,6 @@ func (K8sVeleroRestoresService *K8sVeleroRestoresService) DescribeVeleroRestore(
 // @param uuid path uuid.UUID true "用户UUID"
 // @return err
 func (K8sVeleroRestoresService *K8sVeleroRestoresService) DeleteK8sVeleroRestore(req *veleroReq.DeleteVeleroRestoreReq, uuid uuid.UUID) (err error) {
-	fmt.Print(req)
 	kubernetes, err := K8sVeleroRestoresService.Generic(req, uuid)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("创建失败:" + err.Error())

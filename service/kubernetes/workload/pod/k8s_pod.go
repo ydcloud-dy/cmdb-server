@@ -66,7 +66,6 @@ func (k *K8sPodService) GetPodList(req pods.PodListReq) (podList *[]corev1.Pod, 
 	}
 	result, err := paginate.Paginate(filterPod, req.Page, req.PageSize)
 
-	fmt.Println(result)
 	return result.(*[]corev1.Pod), len(filterPod), nil
 }
 

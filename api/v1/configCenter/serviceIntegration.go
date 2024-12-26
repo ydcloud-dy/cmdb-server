@@ -6,7 +6,6 @@ import (
 	"DYCLOUD/model/configCenter"
 	"DYCLOUD/model/configCenter/request"
 	"DYCLOUD/utils"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"strconv"
@@ -77,7 +76,6 @@ func (s *ServiceIntegrationApi) CreateServiceIntegration(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request)
 	request.CreatedBy = utils.GetUserID(c)
 	request.CreatedName = utils.GetUserName(c)
 	//userId := utils.GetUserID(c)
@@ -102,7 +100,6 @@ func (s *ServiceIntegrationApi) UpdateServiceIntegration(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request, "================================")
 	request.UpdatedBy = utils.GetUserID(c)
 	request.UpdatedName = utils.GetUserName(c)
 	err = ServiceIntegrationService.UpdateServiceIntegration(request)
@@ -124,7 +121,6 @@ func (s *ServiceIntegrationApi) DeleteServiceIntegration(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	err = ServiceIntegrationService.DeleteServiceIntegration(id)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -144,7 +140,6 @@ func (s *ServiceIntegrationApi) DescribeServiceIntegration(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//Environment.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, err := ServiceIntegrationService.DescribeServiceIntegration(id)
@@ -168,7 +163,6 @@ func (s *ServiceIntegrationApi) VerifyServiceIntegration(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(request)
 	request.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	msg, err := ServiceIntegrationService.VerifyServiceIntegration(request)

@@ -7,7 +7,6 @@ import (
 	"DYCLOUD/utils/kubernetes/paginate"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gofrs/uuid/v5"
 	v1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroclientset "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
@@ -22,7 +21,6 @@ type K8sVeleroRecordsService struct {
 func (k8sVeleroRecordsService *K8sVeleroRecordsService) GetK8sVeleroRecordList(
 	req veleroReq.K8sVeleroRecordsSearchReq, uuid uuid.UUID) (list *[]v1.Backup, total int, err error) {
 
-	fmt.Print(req)
 	kubernetes, err := k8sVeleroRecordsService.Generic(&req, uuid)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("获取失败:" + err.Error())
@@ -83,7 +81,6 @@ func (K8sVeleroRecordsService *K8sVeleroRecordsService) DescribeVeleroRecord(req
 	return veleroRecord, nil
 }
 func (K8sVeleroRecordsService *K8sVeleroRecordsService) DeleteK8sVeleroRecord(req *veleroReq.DeleteVeleroRecordReq, uuid uuid.UUID) (err error) {
-	fmt.Print(req)
 	kubernetes, err := K8sVeleroRecordsService.Generic(req, uuid)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("创建失败:" + err.Error())

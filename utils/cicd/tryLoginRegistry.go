@@ -22,9 +22,7 @@ func TryLoginRegistry(basicUrl, username, password string, insecure bool) error 
 	} else {
 		schema = "https"
 	}
-	fmt.Println(insecure)
-	fmt.Println(schema)
-	fmt.Println("???????????")
+
 	hostUrl := fmt.Sprintf("%s://%s", schema, strings.TrimRight(basicUrl, "/"))
 	resp, err := http.Get(hostUrl)
 	if err != nil {

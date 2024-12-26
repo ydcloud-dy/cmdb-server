@@ -7,7 +7,6 @@ import (
 	"DYCLOUD/utils/kubernetes/paginate"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gofrs/uuid/v5"
 	v1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroclientset "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
@@ -54,7 +53,6 @@ func (k8sVeleroTasksService *K8sVeleroTasksService) CreateK8sVeleroTasks(req *ve
 
 // DeleteK8sVeleroTasks 删除k8sVeleroTasks表记录
 func (k8sVeleroTasksService *K8sVeleroTasksService) DeleteK8sVeleroTasks(req *veleroReq.DeleteVeleroTaskReq, uuid uuid.UUID) (err error) {
-	fmt.Print(req)
 	kubernetes, err := k8sVeleroTasksService.Generic(req, uuid)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("创建失败:" + err.Error())
@@ -143,7 +141,6 @@ func (k8sVeleroTasksService *K8sVeleroTasksService) DescribeVeleroTask(req *vele
 func (k8sVeleroTasksService *K8sVeleroTasksService) GetK8sVeleroTasksInfoList(
 	req veleroReq.K8sVeleroTasksSearchReq, uuid uuid.UUID) (list *[]v1.Schedule, total int, err error) {
 
-	fmt.Print(req)
 	kubernetes, err := k8sVeleroTasksService.Generic(&req, uuid)
 	if err != nil {
 		global.DYCLOUD_LOG.Error("获取失败:" + err.Error())

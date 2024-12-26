@@ -97,7 +97,6 @@ func (w *WsApi) Terminal(c *gin.Context) {
 	}()
 
 	if err := client.Pod.Exec(cmd, kubeshell, terminal); err != nil {
-		fmt.Println(err.Error())
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}

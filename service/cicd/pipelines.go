@@ -66,7 +66,6 @@ func (e *PipelinesService) GetPipelinesList(req *request.PipelinesRequest) (envL
 	if err != nil {
 		return nil, 0, err
 	}
-	fmt.Println(data)
 	return &data, total, nil
 }
 
@@ -83,7 +82,6 @@ func (e *PipelinesService) GetPipelinesStatus(client *tektonclient.Clientset, re
 	if err := global.DYCLOUD_DB.Where("app_name = ? and env_name = ?", req.AppCode, req.EnvCode).First(&data).Error; err != nil {
 		return nil, nil
 	}
-	fmt.Println(data.Name)
 	pipelineRun, err := client.TektonV1().PipelineRuns(req.Namespace).Get(context.TODO(), fmt.Sprintf("%s-%s", data.Name, data.EnvName), metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -118,7 +116,6 @@ func (e *PipelinesService) GetPipelinesStatus(client *tektonclient.Clientset, re
 		LastRunTime: lastRunTime,      // 最近运行时间
 		Duration:    duration,         // 耗时
 	}
-	fmt.Println(result)
 	return &result, nil
 }
 
@@ -138,7 +135,6 @@ func (e *PipelinesService) DescribePipelines(id int) (*cicd.Pipelines, error) {
 		First(&data).Error; err != nil {
 		return nil, err
 	}
-	fmt.Println(data)
 	return &data, nil
 }
 
@@ -220,7 +216,6 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 					},
 				}
 			case "2":
-				fmt.Printf("Building Image URL: %s:%s", fmt.Sprintf("%s/%s/%s", task.Warehouse, task.SpatialName, req.AppName), task.MirrorTag)
 				pipelineTask = tektonv1.PipelineTask{
 					Name:     task.Name,
 					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
@@ -289,9 +284,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 					},
 				}
 			case "4":
-				fmt.Println("yaml: ", task.YamlResource)
-				fmt.Println("appName：", req.AppName)
-				fmt.Println("envName：", req.EnvName)
+
 				pipelineTask = tektonv1.PipelineTask{
 					Name:     task.Name,
 					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
@@ -481,7 +474,6 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 		return fmt.Errorf("failed to create RoleBinding: %v", err)
 	}
 
-	fmt.Println(pipelineTasks)
 	// 创建 Pipeline 模板
 	pipeline := &tektonv1.Pipeline{
 		ObjectMeta: metav1.ObjectMeta{
@@ -564,7 +556,6 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 
 		// 保存 Stage 的 Params
 		for _, param := range stage.Params {
-			fmt.Println(param)
 			newParam := &cicd.Param{
 				StageID:      newStage.ID, // 使用保存后的 Stage ID
 				PipelineID:   newPipeline.ID,
@@ -630,8 +621,7 @@ func (e *PipelinesService) RunPipelines(k8sClient *kubernetes.Clientset, clientS
 	if err != nil {
 		return fmt.Errorf("failed to get Pipeline: %v", err)
 	}
-	fmt.Println(pipeline)
-	fmt.Println(req)
+
 	// 根据 pipeline 配置创建 PipelineRun 对象
 	pipelineRun := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
@@ -695,7 +685,6 @@ func (e *PipelinesService) RunPipelines(k8sClient *kubernetes.Clientset, clientS
 	}
 
 	// 输出日志或其他信息
-	fmt.Printf("PipelineRun '%s' has been created successfully in namespace '%s'.\n", pipelineRun.Name, req.K8SNamespace)
 
 	return nil
 }
@@ -806,7 +795,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 					},
 				}
 			case "2":
-				fmt.Printf("Building Image URL: %s:%s", fmt.Sprintf("%s/%s/%s", task.Warehouse, task.SpatialName, req.AppName), task.MirrorTag)
 				pipelineTask = tektonv1.PipelineTask{
 					Name:     task.Name,
 					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
@@ -875,9 +863,7 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 					},
 				}
 			case "4":
-				fmt.Println("yaml: ", task.YamlResource)
-				fmt.Println("appName：", req.AppName)
-				fmt.Println("envName：", req.EnvName)
+
 				pipelineTask = tektonv1.PipelineTask{
 					Name:     task.Name,
 					RunAfter: []string{previousTaskName}, // 依赖于前一个任务的完成
@@ -1008,7 +994,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing Pipeline: %v", err)
 	}
-	fmt.Println(existingPipeline)
 	// 修改 Pipeline 的内容
 	existingPipeline.Spec.Tasks = pipelineTasks
 	existingPipeline.Spec.Workspaces = []tektonv1.PipelineWorkspaceDeclaration{
@@ -1042,7 +1027,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	// 获取并更新 Pipeline
 	// 获取并更新 Pipeline
 	var pipelines *cicd.Pipelines
-	fmt.Println(req.ID)
 
 	// 获取 pipeline 数据
 	pipelines, err = e.DescribePipelines(int(req.ID))
@@ -1069,7 +1053,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	pipelines.CreatedBy = req.CreatedBy
 	pipelines.CreatedName = req.CreatedName
 	pipelines.RepoID = req.RepoID
-	fmt.Println("Updating Pipeline:", pipelines)
 	if err := tx.Save(&pipelines).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to update Pipeline in database: %v", err)
@@ -1092,7 +1075,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	for _, existingStage := range existingStages {
 		if _, exists := stageMapFromRequest[existingStage.Name]; !exists {
 			// 如果请求中没有这个 Stage，则删除它以及其关联的 Task 和 Param
-			fmt.Printf("Deleting Stage: %s (ID: %d)\n", existingStage.Name, existingStage.ID)
 
 			// 删除关联的 Task
 			if err := tx.Where("stage_id = ?", existingStage.ID).Delete(&cicd.Task{}).Error; err != nil {
@@ -1225,7 +1207,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 	if err := tx.Commit().Error; err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %v", err)
 	}
-	fmt.Println("Transaction committed successfully")
 
 	return nil, nil
 
@@ -1238,7 +1219,6 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 //	@param id
 //	@return error
 func (e *PipelinesService) DeletePipelines(id int) error {
-	fmt.Println(id)
 	if err := global.DYCLOUD_DB.Model(&cicd.Pipelines{}).Where("id = ?", id).Delete(&cicd.Pipelines{}).Error; err != nil {
 		return err
 	}
@@ -1252,7 +1232,6 @@ func (e *PipelinesService) DeletePipelines(id int) error {
 //	@param ids
 //	@return error
 func (e *PipelinesService) DeletePipelinesByIds(ids *request.DeleteApplicationByIds) error {
-	fmt.Println(ids)
 	if err := global.DYCLOUD_DB.Model(&cicd.Pipelines{}).Where("id in ?", ids.Ids).Delete(&cicd.Pipelines{}).Error; err != nil {
 		return err
 	}
@@ -1268,11 +1247,9 @@ func (e *PipelinesService) DeletePipelinesByIds(ids *request.DeleteApplicationBy
 //	@return error
 func (e *PipelinesService) GetPipelinesNotice(id int) (*cicd.Notice, error) {
 	var result = cicd.Notice{}
-	fmt.Println(id)
 	if err := global.DYCLOUD_DB.Where("pipeline_id = ? and enable = 1", id).First(&result).Error; err != nil {
 		return nil, err
 	}
-	fmt.Println(result)
 	return &result, nil
 }
 
@@ -1284,8 +1261,7 @@ func (e *PipelinesService) GetPipelinesNotice(id int) (*cicd.Notice, error) {
 //	@param pipelineID
 //	@return error
 func (e *PipelinesService) ClosePipelineNotice(notice *request.ClosePipelineNotice, pipelineID int) error {
-	fmt.Println(notice)
-	fmt.Println(pipelineID)
+
 	if err := global.DYCLOUD_DB.Model(&cicd.Notice{}).Where("id = ?", pipelineID).Update("enable", notice.Enable).Error; err != nil {
 		return err
 	}
@@ -1331,11 +1307,9 @@ func (e *PipelinesService) CreatePipelinesNotice(req *cicd.Notice) error {
 //	@return error
 func (e *PipelinesService) GetPipelinesCache(id int) (*cicd.Cache, error) {
 	var result = cicd.Cache{}
-	fmt.Println(id)
 	if err := global.DYCLOUD_DB.Where("pipeline_id = ? and enable = 1", id).First(&result).Error; err != nil {
 		return nil, err
 	}
-	fmt.Println(result)
 	return &result, nil
 }
 
@@ -1347,8 +1321,7 @@ func (e *PipelinesService) GetPipelinesCache(id int) (*cicd.Cache, error) {
 //	@param pipelineID
 //	@return error
 func (e *PipelinesService) ClosePipelineCache(notice *request.ClosePipelineCache, pipelineID int) error {
-	fmt.Println(notice)
-	fmt.Println(pipelineID)
+
 	if err := global.DYCLOUD_DB.Model(&cicd.Cache{}).Where("id = ?", pipelineID).Update("enable", notice.Enable).Error; err != nil {
 		return err
 	}
@@ -1403,18 +1376,13 @@ func (e *PipelinesService) SyncBranches(id int) error {
 		return err
 	}
 	resp, err := service.GetGitProjectsByRepoId(app.RepoID)
-	fmt.Println(resp)
 	gitConfig := configCenter2.GitConfig{}
 	json.Unmarshal(result.Config, &gitConfig)
-	fmt.Println(result)
-	fmt.Println(gitConfig)
-	fmt.Println(app.GitUrl)
+
 	// 查找匹配的项目
 	var fullName string
 	for _, repo := range resp {
-		fmt.Println(repo)
-		fmt.Println(app.RepoID)
-		fmt.Println(app.GitUrl)
+
 		// 检查 RepoID 和 GitUrl 是否匹配
 		if repo.RepoID == app.RepoID && repo.Path == app.GitUrl {
 			fullName = repo.FullName
@@ -1428,7 +1396,6 @@ func (e *PipelinesService) SyncBranches(id int) error {
 	}
 
 	// 打印找到的 full_name
-	fmt.Println("Found full_name:", fullName)
 
 	// 查找匹配的项目
 

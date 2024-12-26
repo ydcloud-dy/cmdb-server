@@ -70,7 +70,6 @@ func (d *DockerClient) CreateClient(hs model.Host) (cli *client.Client, err erro
 			}
 			cli, err = client.NewClientWithOpts(client.WithAPIVersionNegotiation(), client.WithHTTPClient(httpClient), client.WithHost(fmt.Sprintf("tcp://%v:%v", hs.ApiAddress, *hs.Port)), client.WithTLSClientConfig(caPath, certPath, keyPath))
 		} else {
-			fmt.Println(fmt.Sprintf("tcp://%v:%v", hs.ApiAddress, *hs.Port))
 			cli, err = client.NewClientWithOpts(client.WithAPIVersionNegotiation(), client.WithHost(fmt.Sprintf("tcp://%v:%v", hs.ApiAddress, *hs.Port)))
 		}
 	case model.HostTypeSocket:

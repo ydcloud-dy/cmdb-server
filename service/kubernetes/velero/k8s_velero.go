@@ -53,7 +53,7 @@ func (k *K8sVeleroService) CreateVelero(req *veleroReq.VeleroModel, uuid uuid.UU
 	job := createJobSpec(req)
 	// Create resources
 	ctx := context.TODO()
-	ns, err := client.CoreV1().Namespaces().Get(ctx, namespace.Name, metav1.GetOptions{})
+	_, err = client.CoreV1().Namespaces().Get(ctx, namespace.Name, metav1.GetOptions{})
 	if err == nil {
 		updateFrontendStatus("正在删除 Namespace")
 		options := metav1.DeleteOptions{
@@ -67,7 +67,6 @@ func (k *K8sVeleroService) CreateVelero(req *veleroReq.VeleroModel, uuid uuid.UU
 		time.Sleep(10 * time.Second)
 		updateFrontendStatus("velero命名空间已存在，正在清除旧velero环境")
 	}
-	fmt.Println(ns)
 	_, err = client.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
 	if err != nil {
 
@@ -107,7 +106,6 @@ func (k *K8sVeleroService) CreateVelero(req *veleroReq.VeleroModel, uuid uuid.UU
 func updateFrontendStatus(status string) {
 	// 在这里实现更新前端状态的逻辑
 	// 这可以是通过 WebSocket, HTTP 请求, 或者任何其他方法
-	fmt.Println(status)
 }
 func createNamespace() *corev1.Namespace {
 	return &corev1.Namespace{

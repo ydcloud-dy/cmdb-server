@@ -53,7 +53,6 @@ func (e *BuildEnvService) GetBuildEnvList(req *request.BuildEnvRequest) (envList
 //	@return envList
 //	@return err
 func (e *BuildEnvService) DescribeBuildEnv(id int) (envList *configCenter.BuildEnv, err error) {
-	fmt.Println(id)
 	var data *configCenter.BuildEnv
 	if err := global.DYCLOUD_DB.Where("id = ?", id).Find(&data).Error; err != nil {
 		return nil, err
@@ -68,7 +67,6 @@ func (e *BuildEnvService) DescribeBuildEnv(id int) (envList *configCenter.BuildE
 //	@param req
 //	@return error
 func (e *BuildEnvService) CreateBuildEnv(req *configCenter.BuildEnv) error {
-	fmt.Println(req)
 	var existingEnv configCenter.BuildEnv
 	// 检查是否存在相同的 name
 	if err := global.DYCLOUD_DB.Where("name = ?", req.Name).First(&existingEnv).Error; err == nil {
@@ -89,7 +87,6 @@ func (e *BuildEnvService) CreateBuildEnv(req *configCenter.BuildEnv) error {
 //	@return data
 //	@return err
 func (e *BuildEnvService) UpdateBuildEnv(req *configCenter.BuildEnv) (data *configCenter.BuildEnv, err error) {
-	fmt.Println(req)
 	if err = global.DYCLOUD_DB.Model(&configCenter.BuildEnv{}).Where("id = ?", req.ID).Omit("ID").Updates(&req).Error; err != nil {
 		return nil, err
 	}
@@ -103,7 +100,6 @@ func (e *BuildEnvService) UpdateBuildEnv(req *configCenter.BuildEnv) (data *conf
 //	@param id
 //	@return error
 func (e *BuildEnvService) DeleteBuildEnv(id int) error {
-	fmt.Println(id)
 	if err := global.DYCLOUD_DB.Model(&configCenter.BuildEnv{}).Where("id = ?", id).Delete(&configCenter.BuildEnv{}).Error; err != nil {
 		return err
 	}
@@ -117,7 +113,6 @@ func (e *BuildEnvService) DeleteBuildEnv(id int) error {
 //	@param ids
 //	@return error
 func (e *BuildEnvService) DeleteBuildEnvByIds(ids *request.DeleteBuildEnvByIds) error {
-	fmt.Println(ids)
 	if err := global.DYCLOUD_DB.Model(&configCenter.BuildEnv{}).Where("id in ?", ids.Ids).Delete(&configCenter.BuildEnv{}).Error; err != nil {
 		return err
 	}

@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -49,5 +48,4 @@ func TestGetJSONKeys(t *testing.T) {
 		return
 	}
 
-	fmt.Println(keys)
 }

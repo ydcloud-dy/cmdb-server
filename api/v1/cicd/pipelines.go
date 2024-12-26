@@ -30,7 +30,6 @@ func (PipelinesApi *PipelinesApi) GetPipelinesList(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(env)
 	//Pipelines.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, total, err := PipelineService.GetPipelinesList(env)
@@ -58,7 +57,6 @@ func (PipelinesApi *PipelinesApi) DescribePipelines(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//Pipelines.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	data, err := PipelineService.DescribePipelines(id)
@@ -84,7 +82,6 @@ func (PipelinesApi *PipelinesApi) GetPipelinesStatus(c *gin.Context) {
 		response.FailWithMessage("集群ID不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	k8sService := cluster.K8sClusterService{}
 	cluster, err := k8sService.GetK8sCluster(request.Cluster_ID)
 	if err != nil {
@@ -95,7 +92,6 @@ func (PipelinesApi *PipelinesApi) GetPipelinesStatus(c *gin.Context) {
 		response.FailWithMessage("集群的 kubeConfig 不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	// 解析 kubeConfig 内容
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(cluster.KubeConfig))
 	if err != nil {
@@ -137,7 +133,6 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 		response.FailWithMessage("集群名称不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	k8sService := cluster.K8sClusterService{}
 	cluster, err := k8sService.GetK8sClusterByName(request.K8SClusterName)
 	if err != nil {
@@ -148,7 +143,6 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 		response.FailWithMessage("集群的 kubeConfig 不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	// 解析 kubeConfig 内容
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(cluster.KubeConfig))
 	if err != nil {
@@ -164,9 +158,7 @@ func (PipelinesApi *PipelinesApi) CreatePipelines(c *gin.Context) {
 	}
 	request.CreatedBy = utils.GetUserID(c)
 	request.CreatedName = utils.GetUserName(c)
-	fmt.Println(request.CreatedBy)
-	fmt.Println(request.CreatedName)
-	fmt.Println(request)
+
 	k8sClient, err := kubernetes.NewForConfig(config)
 
 	if err != nil {
@@ -194,7 +186,6 @@ func (PipelinesApi *PipelinesApi) RunPipelines(c *gin.Context) {
 		response.FailWithMessage("集群名称不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	k8sService := cluster.K8sClusterService{}
 	cluster, err := k8sService.GetK8sClusterByName(request.K8SClusterName)
 	if err != nil {
@@ -205,7 +196,6 @@ func (PipelinesApi *PipelinesApi) RunPipelines(c *gin.Context) {
 		response.FailWithMessage("集群的 kubeConfig 不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	// 解析 kubeConfig 内容
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(cluster.KubeConfig))
 	if err != nil {
@@ -221,9 +211,7 @@ func (PipelinesApi *PipelinesApi) RunPipelines(c *gin.Context) {
 	}
 	request.CreatedBy = utils.GetUserID(c)
 	request.CreatedName = utils.GetUserName(c)
-	fmt.Println(request.CreatedBy)
-	fmt.Println(request.CreatedName)
-	fmt.Println(request)
+
 	k8sClient, err := kubernetes.NewForConfig(config)
 
 	if err != nil {
@@ -256,7 +244,6 @@ func (PipelinesApi *PipelinesApi) UpdatePipelines(c *gin.Context) {
 		response.FailWithMessage("集群名称不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	k8sService := cluster.K8sClusterService{}
 	cluster, err := k8sService.GetK8sClusterByName(request.K8SClusterName)
 	if err != nil {
@@ -267,7 +254,6 @@ func (PipelinesApi *PipelinesApi) UpdatePipelines(c *gin.Context) {
 		response.FailWithMessage("集群的 kubeConfig 不能为空", c)
 		return
 	}
-	fmt.Println(request)
 	// 解析 kubeConfig 内容
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(cluster.KubeConfig))
 	if err != nil {
@@ -283,9 +269,7 @@ func (PipelinesApi *PipelinesApi) UpdatePipelines(c *gin.Context) {
 	}
 	request.CreatedBy = utils.GetUserID(c)
 	request.CreatedName = utils.GetUserName(c)
-	fmt.Println(request.CreatedBy)
-	fmt.Println(request.CreatedName)
-	fmt.Println(request)
+
 	k8sClient, err := kubernetes.NewForConfig(config)
 
 	if err != nil {
@@ -312,7 +296,6 @@ func (PipelinesApi *PipelinesApi) DeletePipelines(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	err = PipelineService.DeletePipelines(id)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -333,7 +316,6 @@ func (PipelinesApi *PipelinesApi) DeletePipelinesByIds(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(ids)
 	err = PipelineService.DeletePipelinesByIds(ids)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
@@ -440,7 +422,6 @@ func (PipelinesApi *PipelinesApi) SyncBranches(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	fmt.Println(id)
 	//Applications.CreatedBy = utils.GetUserID(c)
 	//userId := utils.GetUserID(c)
 	err = PipelineService.SyncBranches(id)

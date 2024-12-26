@@ -25,22 +25,19 @@ func (cmdbHostsService *CmdbHostsService) SSHTestCmdbHosts(req *cmdb.CmdbHosts) 
 	port := strconv.Itoa(*req.Port)
 	privateKeyPath, err := utils.GetDefaultPrivateKeyPath()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		//return err
+		return err
 	}
 	// 检查私钥文件是否存在
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		if err := utils.GenerateSSHKey(privateKeyPath); err != nil {
-			fmt.Printf("Error generating SSH key: %v\n", err)
+			return err
 		}
 	}
 	canLogin, err := utils.CanSSHWithoutPassword(req.ServerHost, port, req.Username, privateKeyPath)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		//return err
+		return err
 	}
 	if canLogin {
-		fmt.Println("Can login without password.")
 		// 创建 SSH 客户端
 		client, err := utils.CreateSSHClient(req.ServerHost, port, req.Username, privateKeyPath)
 		if err != nil {
@@ -58,7 +55,6 @@ func (cmdbHostsService *CmdbHostsService) SSHTestCmdbHosts(req *cmdb.CmdbHosts) 
 		}
 		return nil
 	}
-	fmt.Println("Cannot login without password.")
 	if strings.Contains(err.Error(), "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none publickey], no supported methods remain") {
 		return fmt.Errorf("auth failed")
 	}
@@ -190,9 +186,9 @@ func (cmdbHostsService *CmdbHostsService) ImportHosts(filePath string, projectId
 		}
 
 		if err := cmdbHostsService.CreateCmdbHosts(host); err != nil {
-			fmt.Printf("创建主机 %s 失败: %v\n", name, err)
+			global.DYCLOUD_LOG.Error(fmt.Sprintf("创建主机 %s 失败: %v\n", name, err))
 		} else {
-			fmt.Printf("主机 %s 创建成功\n", name)
+			global.DYCLOUD_LOG.Info(fmt.Sprintf("主机 %s 创建成功\n", name))
 		}
 	}
 
