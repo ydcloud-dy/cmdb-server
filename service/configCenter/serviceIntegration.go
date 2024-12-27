@@ -39,7 +39,7 @@ func (s *ServiceIntegrationService) GetServiceIntegrationList(req *request.Servi
 		keyword := "%" + req.Keyword + "%"
 		db.Where("name like ?", keyword).Or("id = ?", req.Keyword)
 	}
-	db.Where("type != 3")
+	db.Where("type < 3")
 	err = db.Count(&total).Error
 	if err != nil {
 		return nil, 0, err

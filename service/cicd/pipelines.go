@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"strings"
+	"time"
 )
 
 type PipelinesService struct{}
@@ -173,7 +174,17 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 			{Name: "source", Workspace: "source"},
 		},
 	})
-
+	var cachePath string
+	switch req.ProjectType {
+	case "node":
+		cachePath = "/root/.npm" // npm 的缓存路径
+	case "java":
+		cachePath = "/root/.m2" // Maven 的缓存路径
+	case "python":
+		cachePath = "/root/.cache/pip" // pip 的缓存路径
+	default:
+		cachePath = "/tmp/cache" // 默认路径
+	}
 	// 遍历前端传递的阶段数并创建 PipelineTask
 	previousTaskName := "clone-source" // 第一个任务是 clone-source，后续任务将依赖于它
 	for _, stage := range req.Stages {
@@ -197,7 +208,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 									VolumeMounts: []corev1.VolumeMount{
 										{
 											Name:      "cache",
-											MountPath: "/root/.m2", // 缓存 Maven 依赖，如果不是 Maven，也可以灵活替换路径
+											MountPath: cachePath, // 动态挂载缓存路径
 										},
 									},
 								},
@@ -535,6 +546,7 @@ func (e *PipelinesService) CreatePipelines(k8sClient *kubernetes.Clientset, clie
 		GitCommitId:    req.GitCommitId,
 		CreatedBy:      req.CreatedBy,
 		CreatedName:    req.CreatedName,
+		ProjectType:    req.ProjectType,
 	}
 
 	if err := tx.Create(newPipeline).Error; err != nil {
@@ -625,7 +637,7 @@ func (e *PipelinesService) RunPipelines(k8sClient *kubernetes.Clientset, clientS
 	// 根据 pipeline 配置创建 PipelineRun 对象
 	pipelineRun := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      req.Name + "-" + req.EnvName, // 使用流水线名称 + "-run" 作为 PipelineRun 名称
+			Name:      fmt.Sprintf("%s-%s-%s", req.Name, req.EnvName, time.Now().Format("20060102150405")), // 拼接时间戳
 			Namespace: req.K8SNamespace,
 		},
 		Spec: tektonv1.PipelineRunSpec{
@@ -1219,9 +1231,17 @@ func (e *PipelinesService) UpdatePipelines(k8sClient *kubernetes.Clientset, clie
 //	@param id
 //	@return error
 func (e *PipelinesService) DeletePipelines(id int) error {
-	if err := global.DYCLOUD_DB.Model(&cicd.Pipelines{}).Where("id = ?", id).Delete(&cicd.Pipelines{}).Error; err != nil {
+	fmt.Println(id)
+	var pipeline = &cicd.Pipelines{}
+	if err := global.DYCLOUD_DB.Model(&cicd.Pipelines{}).Where("id = ?", id).Find(&pipeline).Error; err != nil {
 		return err
 	}
+	fmt.Println(pipeline.Name)
+	fmt.Println(pipeline.K8SNamespace)
+
+	//if err := global.DYCLOUD_DB.Model(&cicd.Pipelines{}).Where("id = ?", id).Delete(&cicd.Pipelines{}).Error; err != nil {
+	//	return err
+	//}
 	return nil
 }
 

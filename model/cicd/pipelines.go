@@ -12,6 +12,7 @@ type Pipelines struct {
 	AppName        string  `json:"app_name" form:"app_name"`
 	EnvName        string  `json:"env_name" form:"env_name"`
 	BuildScript    string  `json:"build_script" form:"build_script"`
+	ProjectType    string  `json:"project_type" form:"project_type"`
 	K8SNamespace   string  `json:"k8s_namespace" form:"k8s_namespace" gorm:"column:k8s_namespace"`
 	K8SClusterName string  `json:"k8s_cluster_name" form:"k8s_cluster_name" gorm:"column:k8s_cluster_name"`
 	BaseImage      string  `json:"base_image" form:"base_image"`
